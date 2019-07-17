@@ -1,12 +1,26 @@
+/bin/
+/build/
+/config.*
+!config.toml.dist
+/docker-compose.override.yml
+/var/
+/vendor/
+
+# IDE integration
+/.vscode/*
+!/.vscode/launch.json
+!/.vscode/tasks.json
+/.idea/*
+!/.idea/codeStyles/
+!/.idea/copyright/
+!/.idea/dataSources.xml
+!/.idea/*.iml
+!/.idea/externalDependencies.xml
+!/.idea/go.imports.xml
+!/.idea/modules.xml
+!/.idea/runConfigurations/
+!/.idea/scopes/
+!/.idea/sqldialects.xml
+
 # Binaries for programs and plugins
 *.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
