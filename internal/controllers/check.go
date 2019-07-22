@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/CheerChen/konachan-app/internal/humanize"
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/kpost"
 
@@ -32,24 +33,24 @@ func Check(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 			continue
 		}
 
-		//width, height := getImageDimension(pic.Name)
-		//
-		//if width != post.Width || height != post.Height {
-		//	if width < 1920 && width < post.Width {
-		//		checkList[post.ID] = fmt.Sprintf("pic size：%s \n", humanize.Bytes(uint64(pic.Size)))
-		//		checkList[post.ID] += fmt.Sprintf("post size：%s \n", humanize.Bytes(uint64(post.FileSize)))
-		//		checkList[post.ID] += fmt.Sprintf("pic：%d*%d \n", width, height)
-		//		checkList[post.ID] += fmt.Sprintf("post：%d*%d \n", post.Width, post.Height)
-		//		//var file kfile.KFile
-		//		//file.Id = post.ID
-		//		//file.Tags = post.Tags
-		//		//file.Ext = post.GetFileExt()
-		//		//file.SlimTags()
-		//		//
-		//		//url := kfile.DownloadHelper(post.FileURL)
-		//		//go kfile.DownloadFile(file.BuildName(), url)
-		//	}
-		//}
+		width, height := getImageDimension(pic.Name)
+
+		if width != post.Width || height != post.Height {
+			//if width < 1920 && width < post.Width {
+			checkList[post.ID] = fmt.Sprintf("pic size：%s \n", humanize.Bytes(uint64(pic.Size)))
+			checkList[post.ID] += fmt.Sprintf("post size：%s \n", humanize.Bytes(uint64(post.FileSize)))
+			checkList[post.ID] += fmt.Sprintf("pic：%d*%d \n", width, height)
+			checkList[post.ID] += fmt.Sprintf("post：%d*%d \n", post.Width, post.Height)
+			//var file kfile.KFile
+			//file.Id = post.ID
+			//file.Tags = post.Tags
+			//file.Ext = post.GetFileExt()
+			//file.SlimTags()
+			//
+			//url := kfile.DownloadHelper(post.FileURL)
+			//go kfile.DownloadFile(file.BuildName(), url)
+			//}
+		}
 
 	}
 

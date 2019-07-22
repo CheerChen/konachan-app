@@ -40,14 +40,8 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	file.Ext = post.GetFileExt()
 	file.SlimTags()
 
-	url := kfile.DownloadHelper(post.FileURL)
-	err = kfile.DownloadFile(file.BuildName(), url)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	// clean cache
-	kfile.CleanFileCache()
+	//url := kfile.DownloadHelper(post.FileURL)
+	go kfile.DownloadFile(file.BuildName(), post.FileURL)
 	// auto close
 	fmt.Fprintln(w, "<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>")
 	return

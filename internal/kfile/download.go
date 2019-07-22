@@ -2,16 +2,15 @@ package kfile
 
 import (
 	"fmt"
-	"io"
-	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
-)
+	"time"
 
-func DownloadHelper(fileUrl string) string {
-	return "http://konachan.wjcodes.com/konachan_download.php?url=" + fileUrl
-}
+	"github.com/cavaliercoder/grab"
+	"golang.org/x/net/proxy"
+)
 
 func (pic KFile) BuildName() string {
 	pic.Tags = strings.Replace(pic.Tags, "/", "_", -1)
@@ -19,38 +18,64 @@ func (pic KFile) BuildName() string {
 	return fmt.Sprintf("Konachan.com - %d %s%s", pic.Id, pic.Tags, pic.Ext)
 }
 
-func DownloadFile(name string, u string) error {
+func DownloadFile(name string, u string) {
 
 	filePath := FilePath + string(os.PathSeparator) + name
-	// Create the file
-	out, err := os.Create(filePath)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer out.Close()
 
-	// Get the data
+	// create client
+	client := grab.NewClient()
+	req, _ := grab.NewRequest(filePath, u)
 
-	//proxyUrl, err := url.Parse("http://127.0.0.1:1080")
-	//myClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyUrl)}}
-	myClient := &http.Client{}
-
-	resp, err := myClient.Get(u)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer resp.Body.Close()
-
-	// Write the body to file
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		log.Println(err)
-		return err
+	dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:10808",
+		nil,
+		&net.Dialer{
+			Timeout:   10 * time.Second,
+			KeepAlive: 10 * time.Second,
+		},
+	)
+	client.HTTPClient.Transport = &http.Transport{
+		Dial: dialer.Dial,
+		//Proxy:           http.ProxyURL(proxy),
+		//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	return nil
+	// start download
+	fmt.Printf("Downloading %v...\n", req.URL())
+	resp := client.Do(req)
+	if resp.HTTPResponse != nil {
+		fmt.Printf("  %v\n", resp.HTTPResponse.Status)
+	}
+
+	// start UI loop
+	t := time.NewTicker(500 * time.Millisecond)
+	defer t.Stop()
+
+Loop:
+	for {
+		select {
+		case <-t.C:
+			fmt.Printf("  transferred %v / %v bytes (%.2f%%)\n",
+				resp.BytesComplete(),
+				resp.Size,
+				100*resp.Progress())
+
+		case <-resp.Done:
+			// download is complete
+			break Loop
+		}
+	}
+
+	// check for errors
+	if err := resp.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
+		return
+	}
+
+	fmt.Printf("Download saved to ./%v \n", resp.Filename)
+
+	// clean cache
+	CleanFileCache()
+	return
 }
 
 const FileNameLengthLimit = 200
