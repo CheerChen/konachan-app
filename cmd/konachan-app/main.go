@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -13,7 +12,7 @@ import (
 )
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "Service Available!\n")
+	http.ServeFile(w, r, "static/index.html")
 }
 
 func main() {
@@ -21,13 +20,16 @@ func main() {
 	kpost.InitDB()
 
 	router := httprouter.New()
+
 	router.GET("/", Index)
+	router.ServeFiles("/static/*filepath", http.Dir("static"))
+
 	router.GET("/post/:id", controllers.GetByIdV2)
-	router.GET("/page/:id", controllers.GetById)
+	//router.GET("/page/:id", controllers.GetById)
 	router.GET("/tag/tf_idf", controllers.GetTfIdf)
 	//router.GET("/tag/update", Update)
 	router.GET("/hot/:limit/:page", controllers.Popular)
-	router.GET("/hot_from/:limit/:page/:from", controllers.PopularByRange)
+	//router.GET("/hot_from/:limit/:page/:from", controllers.PopularByRange)
 	router.GET("/download/:id", controllers.Download)
 	router.GET("/sync", controllers.Sync)
 	router.GET("/check", controllers.Check)
@@ -41,6 +43,7 @@ func main() {
 	router.GET("/album_prefix/:p", controllers.Prefix)
 
 	router.GET("/search/:tag", controllers.Search)
+	router.GET("/remote/:limit/:page/*tag", controllers.Tag)
 
 	router.GET("/dist/:limit", controllers.Dis)
 

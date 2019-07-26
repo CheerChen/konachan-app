@@ -40,7 +40,6 @@ func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	// clean cache
 	kfile.CleanFileCache()
 
-	fmt.Fprint(w, "done\n")
-
+	fmt.Fprintln(w, "<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>")
 	return
 }

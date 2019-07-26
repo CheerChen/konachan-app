@@ -3,3 +3,5 @@
 
 # Binaries for programs and plugins
 *.exe
+
+cmd/konachan-app/static/*

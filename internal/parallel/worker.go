@@ -7,17 +7,12 @@ import (
 	"github.com/CheerChen/konachan-app/internal/kpost"
 )
 
-func worker(pages <-chan int, c chan<- kpost.KPost) {
+func worker(pages <-chan int, c chan<- kpost.KPost, tags string) {
 	for page := range pages {
 		//
 		var posts kpost.KPosts
-		if offset != 0 {
-			fmt.Println("start fetching offset", offset)
-			posts = kpost.GetPostsByRange(offset, 100, page)
-		} else {
-			fmt.Println("start fetching page", page)
-			posts = kpost.GetPostsByPage(100, page)
-		}
+		fmt.Println("start fetching page", page)
+		posts = kpost.GetPosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post
 		}
@@ -37,10 +32,7 @@ func headman(limit, p int) <-chan int {
 	return pages
 }
 
-var offset int
-
-func Work(from, limit, p int) (result kpost.KPosts) {
-	offset = from
+func Work(tags string, limit, p int) (result kpost.KPosts) {
 	pageCh := headman(limit, p)
 	resultCh := make(chan kpost.KPost)
 	var wg sync.WaitGroup
@@ -48,7 +40,7 @@ func Work(from, limit, p int) (result kpost.KPosts) {
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go func() {
-			worker(pageCh, resultCh)
+			worker(pageCh, resultCh, tags)
 			wg.Done()
 		}()
 	}
@@ -60,6 +52,5 @@ func Work(from, limit, p int) (result kpost.KPosts) {
 	for r := range resultCh {
 		result = append(result, r)
 	}
-	offset = 0
 	return
 }

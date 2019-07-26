@@ -68,7 +68,6 @@ func (posts KPosts) MarkAndReduce(baseline float64, tfIdf map[string]float64) (r
 				post.Has = idMap[post.ID]
 			}
 			post.URL = fmt.Sprintf("https://konachan.com/post/show/%d", post.ID)
-			post.DownloadUrl = fmt.Sprintf("http://localhost:8080/download/%d", post.ID)
 			reduced = append(reduced, post)
 		}
 	}
@@ -89,9 +88,6 @@ func (posts KPosts) MarkNotReduce(tfIdf map[string]float64) (marked KPosts) {
 
 		post.Mark(tfIdf, avg)
 		post.URL = fmt.Sprintf("https://konachan.com/post/show/%d", post.ID)
-		post.DownloadUrl = fmt.Sprintf("http://localhost:8080/delete/%d", post.ID)
-		post.PreviewURL = fmt.Sprintf("http://localhost:8080/preview/%d", post.ID)
-		post.SampleURL = fmt.Sprintf("http://localhost:8080/sample/%d", post.ID)
 
 		marked = append(marked, post)
 	}

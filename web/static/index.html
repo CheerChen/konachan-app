@@ -1,0 +1,248 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="referrer" content="never" />
+    <title>PhotoSwipe demo</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+    <!-- Import PhotoSwipe Styles -->
+    <link rel="stylesheet" href="static/photoswipe.css">
+    <link rel="stylesheet" href="static/default-skin/default-skin.css">
+
+    <!-- A touch of fanciness 💄 -->
+    <link href='https://fonts.googleapis.com/css?family=Bitter:400,700,400italic' rel='stylesheet' type='text/css'>
+    <style>
+        body {
+            background: #222;
+            font-family: 'Bitter', Georgia, Times, sans-serif;
+        }
+
+        h1 {
+            margin: 2em;
+        }
+
+        .pswp__caption__center {
+            text-align: center;
+        }
+
+        figure {
+            flex: 25%;
+            max-width: 25%;
+            padding: 0 4px;
+        }
+
+        img {
+            margin-top: 8px;
+            vertical-align: middle;
+            width: 100%;
+        }
+
+        .spacer {
+            height: 5em;
+        }
+
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 0 4px;
+        }
+
+        /* Responsive layout - makes a two column-layout instead of four columns */
+        @media screen and (max-width: 800px) {
+            .column {
+                flex: 50%;
+                max-width: 50%;
+            }
+        }
+
+        /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
+        @media screen and (max-width: 600px) {
+            .column {
+                flex: 100%;
+                max-width: 100%;
+            }
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="row">
+        <div class="col-sm-12 col-sm-offset-0">
+
+            <h1 class="text-center">
+                Iceland<br>
+                <small><em>a PhotoSwipe Demo</em></small>
+            </h1>
+
+            <!-- Galley wrapper that contains all items -->
+            <div id="gallery" class="gallery" itemscope itemtype="http://schema.org/ImageGallery">
+
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Some spacing 😉 -->
+<div class="spacer"></div>
+
+
+<!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+    <!-- Background of PhotoSwipe.
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+        <!-- Container that holds slides.
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+            <div class="pswp__top-bar">
+                <!--  Controls are self-explanatory. Order can be changed. -->
+                <div class="pswp__counter"></div>
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+                <button class="pswp__button pswp__button--share" title="Share"></button>
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import jQuery and PhotoSwipe Scripts -->
+<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+<script src="static/photoswipe.min.js"></script>
+<script src="static/photoswipe-ui-default.min.js"></script>
+
+<script>
+    'use strict';
+
+    /* global jQuery, PhotoSwipe, PhotoSwipeUI_Default, console */
+
+
+    (function ($) {
+
+        var getUrlParameter = function getUrlParameter(sParam) {
+            var sPageURL = window.location.search.substring(1),
+                sURLVariables = sPageURL.split('&'),
+                sParameterName,
+                i;
+
+            for (i = 0; i < sURLVariables.length; i++) {
+                sParameterName = sURLVariables[i].split('=');
+
+                if (sParameterName[0] === sParam) {
+                    return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+                }
+            }
+        };
+
+        // Init empty gallery array
+        var container = [];
+
+        // Loop over gallery items and push it to the array
+        // $('h1').click(function (event) {
+        let page = 1;
+        if (getUrlParameter("page") != null) {
+            page = getUrlParameter("page")
+        }
+        let url = "/hot/500/" + page;
+
+
+        let tag = getUrlParameter("tag");
+        if (getUrlParameter("tag") != null) {
+            url = "/remote/500/" + page + "/" + tag;
+            $('h1').text(tag);
+        }
+        function add2Tags(tag) {
+            return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
+        }
+
+        $.getJSON(url, function (data) {
+            $.each(data.data, function (i, item) {
+                var ddaystrs= new Array();
+                ddaystrs = item.tags.split(" ");
+
+                let title = `<h4 class="all-copy">
+<a href=${item.url} target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
+</h4><p>相似加权分：${item.my_score} / 相关度：${item.tf_idf} / 评分：${item.score} / 分辨率 ${item.width}*${item.height} /
+<a href="/download/${item.id}" target="_blank">下载</a></p>`;
+                if (item.has) {
+                    title += `<b>已获得</b><a href="/delete/${item.id}" target="_blank">删除</a>`;
+                }
+                let slideItem = {
+                    msrc: item.preview_url,
+                    src: item.sample_url += "?" + (Math.random() * (0.99 - 0.01) + 0.01).toFixed(4),
+                    w: item.width,
+                    h: item.height,
+                    title: title
+                };
+                container.push(slideItem);
+                let figureHtml = "";
+                if (item.has) {
+                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
+<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description" style="opacity:0.1"></a></figure>`
+                } else {
+                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
+<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description"></a></figure>`
+                }
+                $("#gallery").append(figureHtml);
+            });
+
+            // Define click event on gallery item
+            $('a').click(function (event) {
+
+                // Prevent location change
+                event.preventDefault();
+
+                // Define object and gallery options
+                var $pswp = $('.pswp')[0],
+                    options = {
+                        index: $(this).parent('figure').index(),
+                        bgOpacity: 0.85,
+                        showHideOpacity: true,
+                        closeOnScroll: false,
+                    };
+
+                // Initialize PhotoSwipe
+                var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, container, options);
+                gallery.init();
+            });
+        });
+        // });
+
+
+    }(jQuery));
+</script>
+</body>
+</html>
