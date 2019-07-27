@@ -192,10 +192,10 @@
                 ddaystrs = item.tags.split(" ");
 
                 let title = `<h4 class="all-copy">
-<a href=${item.url} target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
+<a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
 </h4><p>相似加权分：${item.my_score} / 相关度：${item.tf_idf} / 评分：${item.score} / 分辨率 ${item.width}*${item.height} /
 <a href="/download/${item.id}" target="_blank">下载</a></p>`;
-                if (item.has) {
+                if (item.is_fav) {
                     title += `<b>已获得</b><a href="/delete/${item.id}" target="_blank">删除</a>`;
                 }
                 let slideItem = {

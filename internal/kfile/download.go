@@ -2,14 +2,12 @@ package kfile
 
 import (
 	"fmt"
-	"net"
-	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/cavaliercoder/grab"
-	"golang.org/x/net/proxy"
+
+	"github.com/CheerChen/konachan-app/internal/log"
 )
 
 func (pic KFile) BuildName() string {
@@ -20,27 +18,28 @@ func (pic KFile) BuildName() string {
 
 func DownloadFile(name string, u string) {
 
-	filePath := FilePath + string(os.PathSeparator) + name
+	//filePath := FilePath + string(os.PathSeparator) + name
+	filePath := name
 
 	// create client
 	client := grab.NewClient()
 	req, _ := grab.NewRequest(filePath, u)
 
-	dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:10808",
-		nil,
-		&net.Dialer{
-			Timeout:   10 * time.Second,
-			KeepAlive: 10 * time.Second,
-		},
-	)
-	client.HTTPClient.Transport = &http.Transport{
-		Dial: dialer.Dial,
-		//Proxy:           http.ProxyURL(proxy),
-		//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
+	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:10808",
+	//	nil,
+	//	&net.Dialer{
+	//		Timeout:   10 * time.Second,
+	//		KeepAlive: 10 * time.Second,
+	//	},
+	//)
+	//client.HTTPClient.Transport = &http.Transport{
+	//	Dial: dialer.Dial,
+	//	//Proxy:           http.ProxyURL(proxy),
+	//	//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//}
 
 	// start download
-	fmt.Printf("Downloading %v...\n", req.URL())
+	log.Infof("Downloading %v...\n", req.URL())
 	resp := client.Do(req)
 	if resp.HTTPResponse != nil {
 		fmt.Printf("  %v\n", resp.HTTPResponse.Status)
@@ -54,7 +53,7 @@ Loop:
 	for {
 		select {
 		case <-t.C:
-			fmt.Printf("  transferred %v / %v bytes (%.2f%%)\n",
+			log.Infof("  transferred %v / %v bytes (%.2f%%)\n",
 				resp.BytesComplete(),
 				resp.Size,
 				100*resp.Progress())
@@ -67,14 +66,12 @@ Loop:
 
 	// check for errors
 	if err := resp.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
+		log.Errorf("Download failed: %v\n", err)
 		return
 	}
 
-	fmt.Printf("Download saved to ./%v \n", resp.Filename)
+	log.Infof("Download saved to ./%v \n", resp.Filename)
 
-	// clean cache
-	CleanFileCache()
 	return
 }
 

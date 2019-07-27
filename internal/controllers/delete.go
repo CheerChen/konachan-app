@@ -1,45 +1,44 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
-	"os"
 	"strconv"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/CheerChen/konachan-app/internal/models"
 
-	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/kpost"
+	"github.com/julienschmidt/httprouter"
 )
 
 func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := strconv.Atoi(ps.ByName("id"))
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
+	var post models.Post
+	err = post.Find(id)
 
-	err = kpost.DeletePost(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = post.Delete()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	pics := kfile.LoadFiles()
-	if len(pics) == 0 {
-		http.Error(w, "no pics", http.StatusNotFound)
-		return
-	}
-
-	for _, pic := range pics {
-		if pic.Id == id {
-			os.Remove(pic.Name)
-		}
-	}
-
-	// clean cache
-	kfile.CleanFileCache()
-
-	fmt.Fprintln(w, "<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>")
+	//pics := kfile.LoadFiles()
+	//if len(pics) == 0 {
+	//	http.Error(w, "no pics", http.StatusNotFound)
+	//	return
+	//}
+	//
+	//for _, pic := range pics {
+	//	if pic.Id == id {
+	//		os.Remove(pic.Name)
+	//	}
+	//}
 	return
 }

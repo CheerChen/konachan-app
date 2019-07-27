@@ -1,39 +1,58 @@
 package main
 
 import (
-	"log"
+	"flag"
+	slog "log"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/CheerChen/konachan-app/internal/controllers"
-	"github.com/CheerChen/konachan-app/internal/kpost"
+	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/models"
 )
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	http.ServeFile(w, r, "static/index.html")
 }
 
+var (
+	level = flag.Int("l", -1, "log level, -1:debug, 0:info, 1:warn, 2:error")
+)
+
 func main() {
 
-	kpost.InitDB()
+	lcf := zap.NewDevelopmentConfig()
+	lcf.Level.SetLevel(zapcore.Level(*level))
+	lcf.Development = false
+	lcf.Sampling = nil
+	lcf.DisableStacktrace = true
+
+	logger, err := lcf.Build(zap.AddCallerSkip(1))
+	if err != nil {
+		slog.Fatalln("logger err:", err.Error())
+	}
+	log.SetLogger(logger.Sugar())
+
+	models.Init()
 
 	router := httprouter.New()
 
+	// static
 	router.GET("/", Index)
 	router.ServeFiles("/static/*filepath", http.Dir("static"))
 
+	//
 	router.GET("/post/:id", controllers.GetByIdV2)
-	//router.GET("/page/:id", controllers.GetById)
 	router.GET("/tag/tf_idf", controllers.GetTfIdf)
 	//router.GET("/tag/update", Update)
 	router.GET("/hot/:limit/:page", controllers.Popular)
 	//router.GET("/hot_from/:limit/:page/:from", controllers.PopularByRange)
 	router.GET("/download/:id", controllers.Download)
-	router.GET("/sync", controllers.Sync)
 	router.GET("/check", controllers.Check)
-	router.GET("/check2", controllers.Sync2)
 
 	router.GET("/delete/:id", controllers.Delete)
 
@@ -49,5 +68,5 @@ func main() {
 
 	handler := cors.Default().Handler(router)
 
-	log.Fatal(http.ListenAndServe(":8080", handler))
+	slog.Fatal(http.ListenAndServe(":8080", handler))
 }

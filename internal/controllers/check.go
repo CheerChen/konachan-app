@@ -3,7 +3,7 @@ package controllers
 import (
 	"github.com/CheerChen/konachan-app/internal/humanize"
 	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/kpost"
+	"github.com/CheerChen/konachan-app/internal/models"
 
 	"fmt"
 	"image"
@@ -24,9 +24,9 @@ func Check(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	checkList := make(map[int]string)
+	checkList := make(map[int64]string)
 	for _, pic := range pics {
-		var post kpost.KPost
+		var post models.Post
 		err := post.Find(pic.Id)
 		if err != nil {
 			log.Println("post id not in db", err.Error(), pic.Id)
