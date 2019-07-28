@@ -1,4 +1,3 @@
-rm -rf cmd/konachan-app/static
-cp -rf web/static cmd/konachan-app/
+go-bindata -o=internal/asset/asset.go -pkg=asset web/...
 cd cmd/konachan-app
 go build .

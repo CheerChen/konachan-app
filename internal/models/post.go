@@ -30,7 +30,7 @@ type Post struct {
 	JpegFileSize        int         `json:"jpeg_file_size"`
 	Rating              string      `json:"rating"  db:"rating"`
 	HasChildren         bool        `json:"has_children"`
-	ParentID            interface{} `json:"parent_id"`
+	ParentID            interface{} `json:"parent_id" gorm:"-"`
 	Status              string      `json:"status"`
 	Width               int         `json:"width"`
 	Height              int         `json:"height"`

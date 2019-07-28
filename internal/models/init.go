@@ -1,6 +1,8 @@
 package models
 
 import (
+	"os"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 
@@ -12,17 +14,28 @@ var db *gorm.DB
 var cc *cache.Handler
 
 func Init() {
-	GetDB()
+	db = GetDB()
 	cc = &cache.Handler{"./cache", 60}
 }
 
-func GetDB() {
-	db, err := gorm.Open("sqlite3", "db/sqlite.db")
+func GetDB() *gorm.DB {
+	dbFile := "sqlite.db"
+	if _, err := os.Stat(dbFile); err != nil {
+		_, err = os.Create(dbFile)
+		if err != nil {
+			log.Fatalf("Init DB failed: %s", err)
+		}
+	}
+
+	db, err := gorm.Open("sqlite3", dbFile)
 	if err != nil {
 		log.Fatalf("Init DB failed: %s", err)
 	}
-	defer db.Close()
 
 	// 自动迁移模式
-	db.AutoMigrate(&Post{})
+	err = db.AutoMigrate(&Post{}).Error
+	if err != nil {
+		log.Fatalf("AutoMigrate failed: %s", err)
+	}
+	return db
 }

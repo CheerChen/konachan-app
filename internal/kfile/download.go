@@ -2,6 +2,7 @@ package kfile
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -10,16 +11,29 @@ import (
 	"github.com/CheerChen/konachan-app/internal/log"
 )
 
-func (pic KFile) BuildName() string {
+func (pic *KFile) BuildName() {
 	pic.Tags = strings.Replace(pic.Tags, "/", "_", -1)
 	pic.Tags = strings.Replace(pic.Tags, ":", "_", -1)
-	return fmt.Sprintf("Konachan.com - %d %s%s", pic.Id, pic.Tags, pic.Ext)
+	pic.Name = fmt.Sprintf("Konachan.com - %d %s%s", pic.Id, pic.Tags, pic.Ext)
 }
 
-func DownloadFile(name string, u string) {
+const FileNameLengthLimit = 200
 
-	//filePath := FilePath + string(os.PathSeparator) + name
-	filePath := name
+func (pic *KFile) SlimTags() {
+
+	tags := strings.Split(pic.Tags, " ")
+
+	for len(pic.Tags) >= FileNameLengthLimit {
+		tags = tags[:len(tags)-1]
+		pic.Tags = strings.Join(tags, " ")
+	}
+}
+
+func DownloadFile(file *KFile, u string) {
+	file.SlimTags()
+	file.BuildName()
+
+	filePath := AlbumPath + string(os.PathSeparator) + file.Name
 
 	// create client
 	client := grab.NewClient()
@@ -73,16 +87,4 @@ Loop:
 	log.Infof("Download saved to ./%v \n", resp.Filename)
 
 	return
-}
-
-const FileNameLengthLimit = 200
-
-func (pic *KFile) SlimTags() {
-
-	tags := strings.Split(pic.Tags, " ")
-
-	for len(pic.Tags) >= FileNameLengthLimit {
-		tags = tags[:len(tags)-1]
-		pic.Tags = strings.Join(tags, " ")
-	}
 }

@@ -56,8 +56,8 @@ func GetTfIdf() map[string]float64 {
 	}
 
 	// 降权
-	tfIdf["nobody"] = 0.0
-	tfIdf["all_male"] = 0.0
+	//tfIdf["nobody"] = 0.0
+	//tfIdf["all_male"] = 0.0
 
 	log.Infof("available tags: %d", len(tfIdf))
 

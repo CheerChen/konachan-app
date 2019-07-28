@@ -19,11 +19,11 @@ const (
 )
 
 func GetRemotePosts(tags string, limit, page int) (ps Posts) {
-	if page <= 0 || limit <= 0 {
-		return
-	}
-	if limit > PostLimit {
+	if limit > PostLimit || limit < 1 {
 		limit = PostLimit
+	}
+	if page < 1 {
+		page = 1
 	}
 	req, _ := http.NewRequest("GET", PostByTagNameUrl, nil)
 	req.Header.Add("Accept", "application/json")
@@ -44,18 +44,15 @@ func GetRemotePosts(tags string, limit, page int) (ps Posts) {
 			log.Errorf("Get remote url failed: %s", err)
 			return
 		}
-		err = json.Unmarshal(body, &ps)
-		if err != nil {
-			log.Errorf("Get remote body json Unmarshal failed: %s", err)
-			return
-		}
+		getBytes = body
 		cc.Set(url, body)
-	} else {
-		err := json.Unmarshal(getBytes, &ps)
-		if err != nil {
-			log.Errorf("Cache json Unmarshal failed: %s", err)
-		}
 	}
+
+	err := json.Unmarshal(getBytes, &ps)
+	if err != nil {
+		log.Errorf("Cache json Unmarshal failed: %s", err)
+	}
+
 	return
 }
 
@@ -87,33 +84,24 @@ func GetGlobalTagCount() (total int, tagMap map[string]int) {
 	url := fmt.Sprintf(TagUrl, TagLimit)
 	getBytes := cc.Get(url)
 	if getBytes == nil {
-		tags := Tags{}
-
 		body, err := proxyGet(url)
 		if err != nil {
 			log.Errorf("Get remote url failed: %s", err)
 			return
 		}
-		err = json.Unmarshal(body, &tags)
-		if err != nil {
-			log.Errorf("Get remote body json Unmarshal failed: %s", err)
-			return
-		}
-
-		for _, tag := range tags {
-			tagMap[tag.Name] = tag.Count
-		}
+		getBytes = body
 		cc.Set(url, body)
-
-	} else {
-		err := json.Unmarshal(getBytes, &tagMap)
-		if err != nil {
-			log.Errorf("Cache json Unmarshal failed: %s", err)
-		}
 	}
 
-	for _, count := range tagMap {
-		total = total + count
+	tags := Tags{}
+	err := json.Unmarshal(getBytes, &tags)
+	if err != nil {
+		log.Errorf("Cache json Unmarshal failed: %s", err)
+	}
+
+	for _, tag := range tags {
+		tagMap[tag.Name] = tag.Count
+		total = total + tag.Count
 	}
 
 	return
@@ -133,7 +121,7 @@ func proxyGet(url string) (b []byte, err error) {
 	//	//Proxy:           http.ProxyURL(proxy),
 	//	//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	//}
-	log.Infof("Fetching url", url)
+	log.Infof("fetch url %s", url)
 	resp, err := client.Get(url)
 	if err != nil {
 		return b, err

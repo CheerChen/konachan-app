@@ -1,7 +1,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="referrer" content="never" />
+    <meta name="referrer" content="never"/>
     <title>PhotoSwipe demo</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
 
@@ -71,8 +71,8 @@
         <div class="col-sm-12 col-sm-offset-0">
 
             <h1 class="text-center">
-                Iceland<br>
-                <small><em>a PhotoSwipe Demo</em></small>
+                Konachan-app<br>
+                <small><em>next page-></em></small>
             </h1>
 
             <!-- Galley wrapper that contains all items -->
@@ -174,21 +174,27 @@
         if (getUrlParameter("page") != null) {
             page = getUrlParameter("page")
         }
-        let url = "/hot/500/" + page;
+        let limit = 100;
+        if (getUrlParameter("limit") != null) {
+            limit = getUrlParameter("limit")
+        }
+        let url = `/hot/${limit}/${page}`;
 
 
-        let tag = getUrlParameter("tag");
+        let tag = "";
         if (getUrlParameter("tag") != null) {
-            url = "/remote/500/" + page + "/" + tag;
+            tag = getUrlParameter("tag")
+            url = "/remote/100/" + page + "/" + tag;
             $('h1').text(tag);
         }
+
         function add2Tags(tag) {
             return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
         }
 
         $.getJSON(url, function (data) {
             $.each(data.data, function (i, item) {
-                var ddaystrs= new Array();
+                var ddaystrs = new Array();
                 ddaystrs = item.tags.split(" ");
 
                 let title = `<h4 class="all-copy">
@@ -200,14 +206,14 @@
                 }
                 let slideItem = {
                     msrc: item.preview_url,
-                    src: item.sample_url += "?" + (Math.random() * (0.99 - 0.01) + 0.01).toFixed(4),
-                    w: item.width,
-                    h: item.height,
+                    src: item.sample_url,
+                    w: item.sample_width,
+                    h: item.sample_height,
                     title: title
                 };
                 container.push(slideItem);
                 let figureHtml = "";
-                if (item.has) {
+                if (item.is_fav) {
                     figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
 <a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
 <img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description" style="opacity:0.1"></a></figure>`
@@ -237,6 +243,15 @@
                 // Initialize PhotoSwipe
                 var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, container, options);
                 gallery.init();
+            });
+
+            $('h1 small').click(function (event) {
+                let l = window.location.href.split('?')[0]
+                let page = "1";
+                if (getUrlParameter("page") != null) {
+                    page = getUrlParameter("page");
+                }
+                window.location.href = l + "?page=" + (parseInt(page) + 1);
             });
         });
         // });

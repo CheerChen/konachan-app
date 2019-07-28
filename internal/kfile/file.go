@@ -54,3 +54,15 @@ func LoadFiles(path string) (pics KFiles) {
 
 	return
 }
+
+func (pic *KFile) GetFileById(id int64) (err error) {
+	pics := LoadFiles(AlbumPath)
+
+	for _, p := range pics {
+		if p.Id == id {
+			pic = &p
+		}
+	}
+
+	return ErrRecordNotFound
+}

@@ -20,24 +20,22 @@ func (p *Post) Mark(tfIdf map[string]float64, avg float64) {
 		}
 	}
 
-	if score > 0 {
-		p.TfIDf = score / float64(len(tags))
-		// 对限制内容降权
-		var userScore float64
-		if p.Rating == "e" {
-			userScore = float64(p.Score) * 0.618 / avg
-		} else {
-			userScore = float64(p.Score) / avg
-		}
-		if userScore < 1 {
-			userScore = userScore - 1
-		}
-
-		p.MyScore = (score + userScore) / float64(len(tags)+1)
-
-		sorted := SortTagsByTfIdf(tags, tfIdf)
-		p.Tags = strings.Join(sorted, " ")
+	p.TfIDf = score / float64(len(tags))
+	// 对限制内容降权
+	var userScore float64
+	if p.Rating == "e" {
+		userScore = float64(p.Score) * 0.618 / avg
+	} else {
+		userScore = float64(p.Score) / avg
 	}
+	if userScore < 1 {
+		userScore = userScore - 1
+	}
+
+	p.MyScore = (score + userScore) / float64(len(tags)+1)
+
+	sorted := SortTagsByTfIdf(tags, tfIdf)
+	p.Tags = strings.Join(sorted, " ")
 }
 
 // 打分后按分数筛选排序

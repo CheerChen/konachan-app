@@ -10,7 +10,7 @@ func worker(pages <-chan int, c chan<- Post, tags string) {
 		//
 		var posts Posts
 		fmt.Println("start fetching page", page)
-		posts = kpost.GetPosts(tags, 100, page)
+		posts = GetRemotePosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post
 		}

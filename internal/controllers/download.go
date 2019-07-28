@@ -1,14 +1,13 @@
 package controllers
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/models"
-
-	"fmt"
-	"net/http"
-	"strconv"
 )
 
 func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -34,15 +33,8 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		}
 	}
 
-	var file kfile.KFile
-	file.Id = post.ID
-	file.Tags = post.Tags
-	file.Ext = post.GetFileExt()
-	file.SlimTags()
+	go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags, Ext: post.GetFileExt()}, post.FileURL)
 
-	//url := kfile.DownloadHelper(post.FileURL)
-	go kfile.DownloadFile(file.BuildName(), post.FileURL)
-	// auto close
-	fmt.Fprintln(w, "<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>")
+	w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
 	return
 }
