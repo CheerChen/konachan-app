@@ -33,6 +33,16 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	w.Write(bytes)
 }
 
+func Album(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	bytes, err := asset.Asset("web/static/album.html")
+	if err != nil {
+		log.Errorf("", err)
+		http.NotFound(w, r)
+		return
+	}
+	w.Write(bytes)
+}
+
 var (
 	level = flag.Int("l", -1, "log level, -1:debug, 0:info, 1:warn, 2:error")
 	path  = flag.String("p", "path/to/wallpaper", "wallpaper path, input an absolute path")
@@ -65,6 +75,7 @@ func main() {
 
 	// static
 	router.GET("/", Index)
+	router.GET("/album", Album)
 	//router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	//
@@ -74,12 +85,11 @@ func main() {
 	router.GET("/tag/tf_idf", controllers.GetTfIdf)
 	router.GET("/download/:id", controllers.Download)
 
-	router.GET("/album/:limit/:page", controllers.Album)
+	router.GET("/album/:limit/:page/*tag", controllers.Album)
 	router.GET("/check", controllers.Check)
 	router.GET("/delete/:id", controllers.Delete)
 	router.GET("/preview/:id", controllers.Preview)
 	router.GET("/sample/:id", controllers.Sample)
-	router.GET("/search/:tag", controllers.Search)
 	router.GET("/dist/:limit", controllers.Dis)
 
 	handler := cors.Default().Handler(router)

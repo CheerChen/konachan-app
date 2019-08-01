@@ -5,11 +5,9 @@ import (
 	"image"
 	"image/jpeg"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/disintegration/imaging"
 	"github.com/julienschmidt/httprouter"
@@ -26,7 +24,8 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 	}
 
-	posts, err := models.GetPostsByPage(limit, page)
+	tag := ps.ByName("tag")[1:]
+	posts, err := models.GetPosts(tag, limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -43,31 +42,6 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	cJson(w, marked, map[string]int{
 		"total": len(marked),
-	})
-	return
-
-}
-
-// 搜索tag
-func Search(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-	posts, err := models.GetPostsByTag(ps.ByName("tag"))
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-
-	if len(posts) == 0 {
-		http.Error(w, "no posts", http.StatusNotFound)
-		return
-	}
-
-	tfIdf := models.GetTfIdf()
-	marked := posts.MarkAndReduce(0.0, tfIdf)
-
-	cJson(w, marked, map[string]int{
-		"total": len(posts),
 	})
 	return
 
@@ -128,17 +102,12 @@ func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	//pics := kfile.LoadFiles()
-	//if len(pics) == 0 {
-	//	http.Error(w, "no pics", http.StatusNotFound)
-	//	return
-	//}
-	//
-	//for _, pic := range pics {
-	//	if pic.Id == id {
-	//		os.Remove(pic.Name)
-	//	}
-	//}
+	err = kfile.Delete(id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
 	return
 }
 
@@ -151,21 +120,12 @@ func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	pic := &kfile.KFile{}
-	err = pic.GetFileById(id)
+	pic, err := kfile.GetFileById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
-	var header string
-	if strings.HasSuffix(pic.Name, ".png") {
-		header = "image/png"
-	} else if strings.HasSuffix(pic.Name, ".jpg") {
-		header = "image/jpeg"
-	} else if strings.HasSuffix(pic.Name, ".gif") {
-		header = "image/gif"
-	} else {
+	if pic.Header == "" {
 		http.Error(w, "file format error", http.StatusNotFound)
 		return
 	}
@@ -182,14 +142,22 @@ func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	dst := imaging.Resize(img, 100, 0, imaging.NearestNeighbor)
+	var post models.Post
+	err = post.Find(id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	dst := imaging.Resize(img, post.ActualPreviewWidth, post.ActualPreviewHeight, imaging.Lanczos)
 	buf := new(bytes.Buffer)
 	err = jpeg.Encode(buf, dst, nil)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-type", header)
+	w.Header().Set("Content-type", pic.Header)
 	w.Write(buf.Bytes())
 }
 
@@ -202,33 +170,24 @@ func Sample(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	pic := &kfile.KFile{}
-	err = pic.GetFileById(id)
+	pic, err := kfile.GetFileById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	var header string
-	if strings.HasSuffix(pic.Name, ".png") {
-		header = "image/png"
-	} else if strings.HasSuffix(pic.Name, ".jpg") {
-		header = "image/jpeg"
-	} else if strings.HasSuffix(pic.Name, ".gif") {
-		header = "image/gif"
-	} else {
+	if pic.Header == "" {
 		http.Error(w, "file format error", http.StatusNotFound)
 		return
 	}
 
 	byte, err := ioutil.ReadFile(pic.Name)
-	log.Println("read file:")
-	log.Println(pic.Name)
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-type", header)
+	w.Header().Set("Content-type", pic.Header)
 	w.Write(byte)
 
 }

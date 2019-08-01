@@ -101,12 +101,12 @@ func GetIdMap() (idMap map[int64]bool, err error) {
 	return
 }
 
-func GetPostsByPage(l, p int) (ps Posts, err error) {
-	return ps, db.Limit(l).Offset((p - 1) * l).Find(&ps).Error
-}
-
-func GetPostsByTag(tag string) (ps Posts, err error) {
-	return ps, db.Where("tags LIKE ?", "%"+tag+"%").Find(&ps).Error
+func GetPosts(tag string, l, p int) (ps Posts, err error) {
+	session := db.Limit(l).Offset((p - 1) * l)
+	if len(tag) > 0 {
+		session = session.Where("tags LIKE ?", "%"+tag+"%")
+	}
+	return ps, session.Find(&ps).Error
 }
 
 func (p Post) GetFileExt() string {
