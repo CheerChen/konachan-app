@@ -1,18 +1,15 @@
-package parallel
+package models
 
 import (
-	"fmt"
 	"sync"
 
-	"github.com/CheerChen/konachan-app/internal/kpost"
+	"github.com/CheerChen/konachan-app/internal/log"
 )
 
-func worker(pages <-chan int, c chan<- kpost.KPost, tags string) {
+func worker(pages <-chan int, c chan<- Post, tags string) {
 	for page := range pages {
-		//
-		var posts kpost.KPosts
-		fmt.Println("start fetching page", page)
-		posts = kpost.GetPosts(tags, 100, page)
+		log.Infof("Start fetching page %d...", page)
+		posts := GetRemotePosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post
 		}
@@ -32,9 +29,9 @@ func headman(limit, p int) <-chan int {
 	return pages
 }
 
-func Work(tags string, limit, p int) (result kpost.KPosts) {
+func Work(tags string, limit, p int) (result Posts) {
 	pageCh := headman(limit, p)
-	resultCh := make(chan kpost.KPost)
+	resultCh := make(chan Post)
 	var wg sync.WaitGroup
 	const numWorkers = 10
 	wg.Add(numWorkers)

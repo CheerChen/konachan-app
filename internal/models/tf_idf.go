@@ -1,10 +1,10 @@
-package kpost
+package models
 
 import (
-	"log"
 	"math"
-	"sort"
 	"strings"
+
+	"github.com/CheerChen/konachan-app/internal/log"
 )
 
 //var TfIdf map[string]float64
@@ -13,11 +13,11 @@ func GetTfIdf() map[string]float64 {
 	//if len(TfIdf) != 0 {
 	//	return TfIdf
 	//}
-	globalTotal, globalTagCount := getGlobalTagCount()
+	globalTotal, globalTagCount := GetGlobalTagCount()
 
-	allTags, err := SelectAllTags()
+	allTags, err := GetLocalTags()
 	if err != nil {
-		log.Fatal("init db tags failed", err)
+		log.Fatalf("GetLocalTags failed", err)
 	}
 	tf1 := make(map[string]int)
 	tf2 := make(map[string]int)
@@ -56,30 +56,10 @@ func GetTfIdf() map[string]float64 {
 	}
 
 	// 降权
-	tfIdf["nobody"] = 0.0
-	tfIdf["all_male"] = 0.0
+	//tfIdf["nobody"] = 0.0
+	//tfIdf["all_male"] = 0.0
 
-	log.Println("available tags:")
-	log.Println(len(tfIdf))
+	log.Infof("available tags: %d", len(tfIdf))
 
 	return tfIdf
-}
-
-func SortByTfIdf(unsorted []string, tfIdf map[string]float64) (sorted []string) {
-	var tags Tags
-	for _, item := range unsorted {
-		if _, ok := tfIdf[item]; !ok {
-			tfIdf[item] = 0.0
-		}
-		tags = append(tags, Tag{Name: item, TfIdf: tfIdf[item]})
-	}
-
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].TfIdf > tags[j].TfIdf
-	})
-
-	for _, tag := range tags {
-		sorted = append(sorted, tag.Name)
-	}
-	return sorted
 }

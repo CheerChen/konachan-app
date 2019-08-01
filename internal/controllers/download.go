@@ -1,48 +1,40 @@
 package controllers
 
 import (
+	"net/http"
+	"strconv"
+
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/kpost"
-
-	"fmt"
-	"net/http"
-	"strconv"
+	"github.com/CheerChen/konachan-app/internal/models"
 )
 
 func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	id, err := strconv.Atoi(ps.ByName("id"))
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-	post, err := kpost.GetPostByIdV2(id)
+	post, err := models.GetRemotePost(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-	var dbPost kpost.KPost
-	err = dbPost.Find(post.ID)
+
+	err = post.Find(post.ID)
 	if err != nil {
-		err = post.Sync2DB()
+		err = post.Save()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
 	}
 
-	var file kfile.KFile
-	file.Id = post.ID
-	file.Tags = post.Tags
-	file.Ext = post.GetFileExt()
-	file.SlimTags()
+	go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags, Ext: post.GetFileExt()}, post.FileURL)
 
-	//url := kfile.DownloadHelper(post.FileURL)
-	go kfile.DownloadFile(file.BuildName(), post.FileURL)
-	// auto close
-	fmt.Fprintln(w, "<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>")
+	_, _ = w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
 	return
 }

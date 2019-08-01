@@ -2,8 +2,32 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
+
+	"github.com/julienschmidt/httprouter"
 )
+
+func GetPager(w http.ResponseWriter, ps httprouter.Params) (int, int, error) {
+	limit, err := strconv.Atoi(ps.ByName("limit"))
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	page, err := strconv.Atoi(ps.ByName("page"))
+
+	if err != nil {
+		return 0, 0, err
+	}
+
+	if limit <= 0 || page <= 0 {
+		return 0, 0, errors.New(http.StatusText(http.StatusNotAcceptable))
+	}
+
+	return limit, page, nil
+}
 
 type JsonResponse struct {
 	// Reserved field to add some meta information to the API response

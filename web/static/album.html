@@ -83,7 +83,7 @@
         <div class="col-sm-12 col-sm-offset-0">
 
             <h1 class="text-center">
-                Konachan-app<br>
+                Album<br>
             </h1>
             <small>
                 <select class="page-limits">
@@ -199,7 +199,7 @@
             limit = getUrlParameter("limit")
             $(".page-limits").val(limit)
         }
-        let url = `/remote/${limit}/${page}/`;
+        let url = `/album/${limit}/${page}/`;
 
 
         let tag = "";
@@ -223,28 +223,18 @@
                 let title = `<h4 class="all-copy">
 <a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
 </h4><p>tfidf+Score：${item.my_score} / tfidf：${item.tf_idf} / Score：${item.score} / ${item.width}x${item.height} /
-<a href="/download/${item.id}" target="_blank">Download</a></p>`;
-                if (item.is_fav) {
-                    title += `<a href="/delete/${item.id}" target="_blank">Delete</a>`;
-                }
+<a href="/delete/${item.id}" target="_blank">Delete</a></p>`;
                 let slideItem = {
-                    msrc: item.preview_url,
-                    src: item.sample_url,
-                    w: item.sample_width,
-                    h: item.sample_height,
+                    msrc: `/preview/${item.id}`,
+                    src: `/sample/${item.id}`,
+                    w: item.width,
+                    h: item.height,
                     title: title
                 };
                 container.push(slideItem);
-                let figureHtml = "";
-                if (item.is_fav) {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
-<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description" style="opacity:0.1"></a></figure>`
-                } else {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
+                let figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
 <a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
 <img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description"></a></figure>`
-                }
                 $("#gallery").append(figureHtml);
             });
 
@@ -271,7 +261,10 @@
                 var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, container, options);
                 gallery.init();
             });
+
+
         });
+
         $('.next_page').click(function (event) {
             let l = window.location.href.split('?')[0]
             let page = 1;

@@ -7,77 +7,80 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/CheerChen/konachan-app/internal/memstore"
 )
 
 type KFiles []KFile
 type KFile struct {
-	Id   int    `json:"id"`
+	Id   int64  `json:"id"`
 	Name string `json:"name"`
 	Ext  string `json:"ext"`
 	Size int64
 	Tags string `json:"tags"`
+
+	Header string `json:"header"`
 }
 
-const FilePath = "E:\\Wallpaper"
-
-var (
-	cache = memstore.NewMemoryStore(10 * time.Minute)
-)
-
-func LoadFiles() (pics KFiles) {
-
-	if cache.Get("local_pics") == nil {
-		err := filepath.Walk(FilePath, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if info.IsDir() {
-				return nil
-			}
-
-			id := regexp.MustCompile(`[[:digit:]]+`).FindString(info.Name())
-			if id == "" {
-				return nil
-			}
-			var pic KFile
-			pic.Id, err = strconv.Atoi(id)
-			if err != nil {
-				return nil
-			}
-			pic.Ext = filepath.Ext(info.Name())
-			pic.Name = path
-			pic.Size = info.Size()
-
-			tags := strings.Split(strings.Replace(info.Name(), pic.Ext, "", 1), " ")
-			if len(tags) > 3 {
-				//if len(tags) > 9 {
-				//	pic.Tags = strings.Join(tags[3:9], " ")
-				//} else {
-				pic.Tags = strings.Join(tags[3:], " ")
-				//}
-
-			}
-
-			pics = append(pics, pic)
-
-			return nil
-		})
+func LoadFiles(path string) (pics KFiles) {
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			fmt.Printf("walk error [%v]\n", err)
-		} else {
-			cache.Set("local_pics", pics)
+			return err
+		}
+		if info.IsDir() {
+			return nil
 		}
 
-	} else {
-		pics = cache.Get("local_pics").(KFiles)
+		id := regexp.MustCompile(`[[:digit:]]+`).FindString(info.Name())
+		if id == "" {
+			return nil
+		}
+		var pic KFile
+		pic.Id, err = strconv.ParseInt(id, 10, 64)
+		if err != nil {
+			return nil
+		}
+		pic.Ext = filepath.Ext(info.Name())
+		pic.Name = path
+		pic.Size = info.Size()
+
+		if strings.HasSuffix(pic.Name, ".png") {
+			pic.Header = "image/png"
+		} else if strings.HasSuffix(pic.Name, ".jpg") {
+			pic.Header = "image/jpeg"
+		} else if strings.HasSuffix(pic.Name, ".gif") {
+			pic.Header = "image/gif"
+		} else {
+			return nil
+		}
+
+		pics = append(pics, pic)
+
+		return nil
+	})
+	if err != nil {
+		fmt.Printf("walk error [%v]\n", err)
 	}
 
 	return
 }
 
-func CleanFileCache() {
-	cache.Del("local_pics")
+func GetFileById(id int64) (pic KFile, err error) {
+	pics := LoadFiles(AlbumPath)
+
+	for _, p := range pics {
+		if p.Id == id {
+			return p, nil
+		}
+	}
+
+	return pic, ErrRecordNotFound
+}
+
+func Delete(id int64) (err error) {
+	pic, err := GetFileById(id)
+
+	if err != nil {
+		return
+	}
+	return os.Remove(pic.Name)
+
 }

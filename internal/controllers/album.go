@@ -1,116 +1,47 @@
 package controllers
 
 import (
-	"log"
+	"bytes"
+	"image"
+	"image/jpeg"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 
+	"github.com/disintegration/imaging"
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/kpost"
+	"github.com/CheerChen/konachan-app/internal/kfile"
+	"github.com/CheerChen/konachan-app/internal/models"
 )
 
-// 输出图片内容
+// 本地相册
 func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	limit, err := strconv.Atoi(ps.ByName("limit"))
+	limit, page, err := GetPager(w, ps)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
-		return
 	}
 
-	page, err := strconv.Atoi(ps.ByName("page"))
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotAcceptable)
-		return
-	}
-
-	if limit <= 0 || page <= 0 {
-		http.Error(w, http.StatusText(http.StatusNotAcceptable), http.StatusNotAcceptable)
-	}
-
-	tfIdf := kpost.GetTfIdf()
-
-	posts, err := kpost.SelectPostByPage(limit, page)
+	tag := ps.ByName("tag")[1:]
+	posts, err := models.GetPosts(tag, limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	log.Println("fetch posts:")
-	log.Println(len(posts))
 
 	if len(posts) == 0 {
 		http.Error(w, "no posts", http.StatusNotFound)
 		return
 	}
 
-	marked := posts.MarkNotReduce(tfIdf)
-	//reduced.MarkDownloaded()
+	tfIdf := models.GetTfIdf()
+	marked := posts.MarkAndReduce(0.0, tfIdf)
 
 	cJson(w, marked, map[string]int{
-		"total":   len(posts),
-		"reduced": len(marked),
-	})
-	return
-
-}
-
-func Prefix(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-	tfIdf := kpost.GetTfIdf()
-
-	posts, err := kpost.SelectPostByPrefix(ps.ByName("p"))
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	log.Println("fetch posts:")
-	log.Println(len(posts))
-
-	if len(posts) == 0 {
-		http.Error(w, "no posts", http.StatusNotFound)
-		return
-	}
-
-	marked := posts.MarkNotReduce(tfIdf)
-	//reduced.MarkDownloaded()
-
-	cJson(w, marked, map[string]int{
-		"total":   len(posts),
-		"reduced": len(marked),
-	})
-	return
-
-}
-
-// 输出图片内容
-func Search(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-
-	tfIdf := kpost.GetTfIdf()
-
-	posts, err := kpost.SelectPostByTag(ps.ByName("tag"))
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
-	}
-	log.Println("fetch posts:")
-	log.Println(len(posts))
-
-	if len(posts) == 0 {
-		http.Error(w, "no posts", http.StatusNotFound)
-		return
-	}
-
-	marked := posts.MarkNotReduce(tfIdf)
-	//reduced.MarkDownloaded()
-
-	cJson(w, marked, map[string]int{
-		"total":   len(posts),
-		"reduced": len(marked),
+		"total": len(marked),
 	})
 	return
 
@@ -125,15 +56,15 @@ func Dis(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	idMap, err := kpost.SelectAllIds2Map()
+	idMap, err := models.GetIdMap()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	disMap := make(map[int]int)
+	disMap := make(map[int64]int)
 	for id := range idMap {
-		dis := id / limit
+		dis := id / int64(limit)
 		if _, ok := disMap[dis]; !ok {
 			disMap[dis] = 1
 		} else {
@@ -143,4 +74,123 @@ func Dis(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	cJson(w, disMap, nil)
 	return
+}
+
+// 检查数据一致
+func Check(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	cJson(w, kfile.Check(), nil)
+}
+
+// 从本地删除
+func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
+		return
+	}
+	var post models.Post
+	err = post.Find(id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	err = post.Delete()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+	err = kfile.Delete(id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		return
+	}
+
+	_, _ = w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
+
+	return
+}
+
+// 输出缩略图
+func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
+		return
+	}
+
+	pic, err := kfile.GetFileById(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	if pic.Header == "" {
+		http.Error(w, "file format error", http.StatusNotFound)
+		return
+	}
+
+	file, err := os.Open(pic.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	defer file.Close()
+	img, _, err := image.Decode(file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var post models.Post
+	err = post.Find(id)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	dst := imaging.Resize(img, post.ActualPreviewWidth, post.ActualPreviewHeight, imaging.Lanczos)
+	buf := new(bytes.Buffer)
+	err = jpeg.Encode(buf, dst, nil)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-type", pic.Header)
+	w.Write(buf.Bytes())
+}
+
+// 输出全尺寸
+func Sample(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotAcceptable)
+		return
+	}
+
+	pic, err := kfile.GetFileById(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	if pic.Header == "" {
+		http.Error(w, "file format error", http.StatusNotFound)
+		return
+	}
+
+	byte, err := ioutil.ReadFile(pic.Name)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-type", pic.Header)
+	w.Write(byte)
+
 }
