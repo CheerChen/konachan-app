@@ -79,8 +79,7 @@ func main() {
 	//router.ServeFiles("/static/*filepath", http.Dir("static"))
 
 	//
-	router.GET("/remote/:limit/:page/*tag", controllers.Tag)
-	router.GET("/hot/:limit/:page", controllers.Hot)
+	router.GET("/remote/:limit/:page/*tag", controllers.Remote)
 	router.GET("/post/:id", controllers.GetByIdV2)
 	router.GET("/tag/tf_idf", controllers.GetTfIdf)
 	router.GET("/download/:id", controllers.Download)

@@ -108,6 +108,9 @@ func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+
+	_, _ = w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
+
 	return
 }
 

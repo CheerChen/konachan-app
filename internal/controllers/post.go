@@ -11,33 +11,6 @@ import (
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
-func Hot(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	limit, page, err := GetPager(w, ps)
-
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotAcceptable)
-	}
-
-	tfIdf := models.GetTfIdf()
-
-	posts := models.Work("", limit, page)
-
-	log.Infof("fetch posts: %d", len(posts))
-
-	if len(posts) == 0 {
-		http.Error(w, "no posts", http.StatusNotFound)
-		return
-	}
-
-	reduced := posts.MarkAndReduce(0.0, tfIdf)
-
-	cJson(w, reduced, map[string]int{
-		"total":   len(posts),
-		"reduced": len(reduced),
-	})
-	return
-}
-
 func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
 
@@ -60,7 +33,7 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	cJson(w, post, nil)
 }
 
-func Tag(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	limit, page, err := GetPager(w, ps)
 
 	if err != nil {

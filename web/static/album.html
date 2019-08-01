@@ -63,6 +63,18 @@
             }
         }
 
+        .next_page {
+            font-size: 12px;
+        }
+
+        .page-limits {
+            font-size: 12px;
+        }
+
+        .prev_page {
+            font-size: 12px;
+        }
+
     </style>
 </head>
 <body>
@@ -72,8 +84,16 @@
 
             <h1 class="text-center">
                 Album<br>
-                <small><em>next page-></em></small>
             </h1>
+            <small>
+                <select class="page-limits">
+                    <option value="100">100p</option>
+                    </option>
+                    <option value="500">500p</option>
+                </select>
+                <a class="prev_page" rel="prev" href="javascript:;">← Prev</a>
+                <a class="next_page" rel="next" href="javascript:;">Next →</a>
+            </small>
 
             <!-- Galley wrapper that contains all items -->
             <div id="gallery" class="gallery" itemscope itemtype="http://schema.org/ImageGallery">
@@ -177,6 +197,7 @@
         let limit = 100;
         if (getUrlParameter("limit") != null) {
             limit = getUrlParameter("limit")
+            $(".page-limits").val(limit)
         }
         let url = `/album/${limit}/${page}/`;
 
@@ -184,8 +205,10 @@
         let tag = "";
         if (getUrlParameter("tag") != null) {
             tag = getUrlParameter("tag")
-            url = `/album/${limit}/${page}/${tag}`;
-            $('h1').text(tag);
+            url += tag;
+            if (tag.length > 0) {
+                $('h1').text(tag);
+            }
         }
 
         function add2Tags(tag) {
@@ -199,8 +222,8 @@
 
                 let title = `<h4 class="all-copy">
 <a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
-</h4><p>相似加权分：${item.my_score} / 相关度：${item.tf_idf} / 评分：${item.score} / 分辨率 ${item.width}*${item.height}
-<a href="/delete/${item.id}" target="_blank">删除</a></p>`;
+</h4><p>tfidf+Score：${item.my_score} / tfidf：${item.tf_idf} / Score：${item.score} / ${item.width}x${item.height} /
+<a href="/delete/${item.id}" target="_blank">Delete</a></p>`;
                 let slideItem = {
                     msrc: `/preview/${item.id}`,
                     src: `/sample/${item.id}`,
@@ -216,7 +239,7 @@
             });
 
             // Define click event on gallery item
-            $('a').click(function (event) {
+            $('.gallery a').click(function (event) {
 
                 // Prevent location change
                 event.preventDefault();
@@ -228,6 +251,10 @@
                         bgOpacity: 0.85,
                         showHideOpacity: true,
                         closeOnScroll: false,
+                        shareButtons: [
+                            {id: 'download', label: 'Download image', url: '{{raw_image_url}}', download: true}
+                        ],
+
                     };
 
                 // Initialize PhotoSwipe
@@ -235,17 +262,62 @@
                 gallery.init();
             });
 
-            $('h1 small').click(function (event) {
-                let l = window.location.href.split('?')[0]
-                let page = "1";
-                if (getUrlParameter("page") != null) {
-                    page = getUrlParameter("page");
-                }
-                window.location.href = l + "?page=" + (parseInt(page) + 1);
-            });
-        });
-        // });
 
+        });
+
+        $('.next_page').click(function (event) {
+            let l = window.location.href.split('?')[0]
+            let page = 1;
+            if (getUrlParameter("page") != null) {
+                page = parseInt(getUrlParameter("page"));
+            }
+            page++;
+
+            let tag = "";
+            if (getUrlParameter("tag") != null) {
+                tag = getUrlParameter("tag");
+            }
+
+            let limit = $(".page-limits").val();
+
+            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
+        });
+
+        $('.prev_page').click(function (event) {
+            let l = window.location.href.split('?')[0]
+            let page = 1;
+            if (getUrlParameter("page") != null) {
+                page = parseInt(getUrlParameter("page"));
+            }
+            if (page > 1) {
+                page--
+            }
+
+            let limit = $(".page-limits").val();
+
+            let tag = "";
+            if (getUrlParameter("tag") != null) {
+                tag = getUrlParameter("tag");
+            }
+            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
+        });
+
+        $(".page-limits").change(function () {
+            let l = window.location.href.split('?')[0]
+            let page = 1;
+            if (getUrlParameter("page") != null) {
+                page = parseInt(getUrlParameter("page"));
+            }
+
+            let limit = $(".page-limits").val();
+
+            let tag = "";
+            if (getUrlParameter("tag") != null) {
+                tag = getUrlParameter("tag");
+            }
+
+            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
+        });
 
     }(jQuery));
 </script>

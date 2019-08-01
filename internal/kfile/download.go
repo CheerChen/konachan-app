@@ -53,10 +53,10 @@ func DownloadFile(file *KFile, u string) {
 	//}
 
 	// start download
-	log.Infof("Downloading %v...\n", req.URL())
+	log.Infof("Downloading %v...", req.URL())
 	resp := client.Do(req)
 	if resp.HTTPResponse != nil {
-		fmt.Printf("  %v\n", resp.HTTPResponse.Status)
+		log.Infof("HTTPResponse %v", resp.HTTPResponse.Status)
 	}
 
 	// start UI loop
@@ -67,7 +67,7 @@ Loop:
 	for {
 		select {
 		case <-t.C:
-			log.Infof("  transferred %v / %v bytes (%.2f%%)\n",
+			log.Infof("  transferred %v / %v bytes (%.2f%%)",
 				resp.BytesComplete(),
 				resp.Size,
 				100*resp.Progress())
@@ -80,11 +80,11 @@ Loop:
 
 	// check for errors
 	if err := resp.Err(); err != nil {
-		log.Errorf("Download failed: %v\n", err)
+		log.Errorf("Download failed: %v", err)
 		return
 	}
 
-	log.Infof("Download saved to ./%v \n", resp.Filename)
+	log.Infof("Download saved to ./%v", resp.Filename)
 
 	return
 }

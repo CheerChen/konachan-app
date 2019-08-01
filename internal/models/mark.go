@@ -24,13 +24,14 @@ func (p *Post) Mark(tfIdf map[string]float64, avg float64) {
 	// 对限制内容降权
 	var userScore float64
 	if p.Rating == "e" {
-		userScore = float64(p.Score) * 0.618 / avg
-	} else {
-		userScore = float64(p.Score) / avg
+		userScore = float64(p.Score) * 0.618
 	}
-	if userScore < 1 {
-		userScore = userScore - 1
-	}
+
+	userScore = float64(p.Score) / avg
+	//
+	//if userScore < 1 {
+	//	userScore = userScore - 1
+	//}
 
 	p.MyScore = (score + userScore) / float64(len(tags)+1)
 

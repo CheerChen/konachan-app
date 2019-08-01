@@ -35,6 +35,6 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags, Ext: post.GetFileExt()}, post.FileURL)
 
-	w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
+	_, _ = w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
 	return
 }

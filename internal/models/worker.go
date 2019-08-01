@@ -1,16 +1,15 @@
 package models
 
 import (
-	"fmt"
 	"sync"
+
+	"github.com/CheerChen/konachan-app/internal/log"
 )
 
 func worker(pages <-chan int, c chan<- Post, tags string) {
 	for page := range pages {
-		//
-		var posts Posts
-		fmt.Println("start fetching page", page)
-		posts = GetRemotePosts(tags, 100, page)
+		log.Infof("Start fetching page %d...", page)
+		posts := GetRemotePosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post
 		}
