@@ -6,3 +6,4 @@
 *.db
 
 cmd/konachan-app/cache/*
+web/static/*
