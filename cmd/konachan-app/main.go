@@ -10,13 +10,12 @@ import (
 	"os/exec"
 	"runtime"
 
-	"github.com/CheerChen/konachan-app/internal/asset"
-
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
+	"github.com/CheerChen/konachan-app/internal/asset"
 	"github.com/CheerChen/konachan-app/internal/controllers"
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/log"
@@ -76,7 +75,7 @@ func main() {
 	// static
 	router.GET("/", Index)
 	router.GET("/album", Album)
-	//router.ServeFiles("/static/*filepath", http.Dir("static"))
+	router.ServeFiles("/web/*filepath", asset.AssetFS())
 
 	//
 	router.GET("/remote/:limit/:page/*tag", controllers.Remote)

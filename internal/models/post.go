@@ -102,7 +102,7 @@ func GetIdMap() (idMap map[int64]bool, err error) {
 }
 
 func GetPosts(tag string, l, p int) (ps Posts, err error) {
-	session := db.Limit(l).Offset((p - 1) * l)
+	session := db.Limit(l).Offset((p - 1) * l).Order("id desc")
 	if len(tag) > 0 {
 		session = session.Where("tags LIKE ?", "%"+tag+"%")
 	}

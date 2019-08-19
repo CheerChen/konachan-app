@@ -3,6 +3,7 @@ module github.com/CheerChen/konachan-app
 require (
 	github.com/cavaliercoder/grab v2.0.0+incompatible
 	github.com/disintegration/imaging v1.6.0
+	github.com/elazarl/go-bindata-assetfs v1.0.0
 	github.com/jinzhu/gorm v1.9.10
 	github.com/julienschmidt/httprouter v1.2.0
 	github.com/rs/cors v1.6.0
