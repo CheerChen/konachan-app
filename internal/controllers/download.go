@@ -31,6 +31,12 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 			http.Error(w, err.Error(), http.StatusServiceUnavailable)
 			return
 		}
+		pt := &models.PostTag{}
+		err = pt.Save(post.ID, post.Tags)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
 	}
 
 	go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags, Ext: post.GetFileExt()}, post.FileURL)

@@ -8,7 +8,7 @@ import (
 
 func worker(pages <-chan int, c chan<- Post, tags string) {
 	for page := range pages {
-		log.Infof("Start fetching page %d...", page)
+		log.Infof("fetching page %d...", page)
 		posts := GetRemotePosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post

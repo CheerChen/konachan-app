@@ -92,8 +92,8 @@ func main() {
 
 	handler := cors.Default().Handler(router)
 
-	go Open("http://localhost:8080/")
-	slog.Fatal(http.ListenAndServe(":8080", handler))
+	go Open("http://localhost:7079/")
+	slog.Fatal(http.ListenAndServe(":7079", handler))
 }
 
 func GetUserInput() (input string) {

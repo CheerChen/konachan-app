@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/CheerChen/konachan-app/internal/log"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -40,6 +42,6 @@ func cJson(w http.ResponseWriter, data interface{}, meta interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		panic(err)
+		log.Errorf("json encode: %s", err)
 	}
 }

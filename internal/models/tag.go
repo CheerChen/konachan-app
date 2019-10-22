@@ -1,5 +1,9 @@
 package models
 
+import (
+	"sort"
+)
+
 type Tag struct {
 	ID        int    `json:"id"`
 	Name      string `json:"name"`
@@ -13,6 +17,22 @@ type Tag struct {
 
 type Tags []Tag
 
-//func (p Tags) Len() int           { return len(p) }
-//func (p Tags) Less(i, j int) bool { return p[i].TfIdf > p[j].TfIdf }
-//func (p Tags) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+// SortTagsByTfIdf
+func SortTagsByTfIdf(unsorted []string, tfIdf map[string]float64) (sorted []string) {
+	var tags Tags
+	for _, item := range unsorted {
+		if _, ok := tfIdf[item]; !ok {
+			tfIdf[item] = 0.0
+		}
+		tags = append(tags, Tag{Name: item, TfIdf: tfIdf[item]})
+	}
+
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].TfIdf > tags[j].TfIdf
+	})
+
+	for _, tag := range tags {
+		sorted = append(sorted, tag.Name)
+	}
+	return sorted
+}

@@ -15,19 +15,17 @@ func GetTfIdf() map[string]float64 {
 	//}
 	globalTotal, globalTagCount := GetGlobalTagCount()
 
-	allTags, err := GetLocalTags()
+	pt := &PostTag{}
+	pts, err := pt.FetchAll()
 	if err != nil {
-		log.Fatalf("GetLocalTags failed", err)
+		log.Fatalf("fetch post tag: %s", err)
 	}
 	tf1 := make(map[string]int)
 	tf2 := make(map[string]int)
 
-	for _, tags := range allTags {
-		//if strings.Contains(file.Tags, "#") {
-		//	file.Tags = strings.Replace(file.Tags, "#", "/", -1)
-		//}
-		ts := strings.Split(tags, " ")
-		for _, tag := range ts {
+	for _, pt := range pts {
+		tags := strings.Split(pt, " ")
+		for _, tag := range tags {
 
 			if _, ok := tf1[tag]; !ok {
 				tf1[tag] = 1
@@ -36,9 +34,9 @@ func GetTfIdf() map[string]float64 {
 			}
 
 			if _, ok := tf2[tag]; !ok {
-				tf2[tag] = len(ts)
+				tf2[tag] = len(tags)
 			} else {
-				tf2[tag] += len(ts)
+				tf2[tag] += len(tags)
 			}
 
 		}

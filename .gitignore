@@ -4,6 +4,7 @@
 # Binaries for programs and plugins
 *.exe
 *.db
+*.db.lock
 
 cmd/konachan-app/cache/*
 web/static/*

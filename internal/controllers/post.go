@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/julienschmidt/httprouter"
@@ -52,11 +53,18 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	tfIdf := models.GetTfIdf()
-	reduced := posts.MarkAndReduce(0.0, tfIdf)
+	err = posts.Mark(tfIdf)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
 
-	cJson(w, reduced, map[string]int{
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].MyScore > posts[j].MyScore
+	})
+
+	cJson(w, posts, map[string]int{
 		"total":   len(posts),
-		"reduced": len(reduced),
+		"reduced": len(posts),
 	})
 	return
 }
