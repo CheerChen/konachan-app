@@ -74,12 +74,6 @@ func worker(ids <-chan int64, c chan<- models.Post) {
 			log.Errorf("save post ID(%d): %s", post.ID, err.Error())
 			continue
 		}
-		pt := &models.PostTag{}
-		err = pt.Save(post.ID, post.Tags)
-		if err != nil {
-			log.Errorf("save post tag ID(%d): %s", post.ID, err.Error())
-			continue
-		}
 
 		c <- post
 	}

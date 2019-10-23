@@ -77,9 +77,7 @@ func GetRemotePost(postId int64) (target Post, err error) {
 	return target, ErrRecordNotFound
 }
 
-func GetGlobalTagCount() (total int, tagMap map[string]int) {
-	tagMap = make(map[string]int)
-
+func GetRemoteTags() (ts Tags) {
 	url := fmt.Sprintf(TagUrl, TagLimit)
 	getBytes := cc.Get(url)
 	if getBytes == nil {
@@ -92,15 +90,9 @@ func GetGlobalTagCount() (total int, tagMap map[string]int) {
 		cc.Set(url, body)
 	}
 
-	tags := Tags{}
-	err := json.Unmarshal(getBytes, &tags)
+	err := json.Unmarshal(getBytes, &ts)
 	if err != nil {
 		log.Errorf("json Unmarshal: %s", err)
-	}
-
-	for _, tag := range tags {
-		tagMap[tag.Name] = tag.Count
-		total = total + tag.Count
 	}
 
 	return

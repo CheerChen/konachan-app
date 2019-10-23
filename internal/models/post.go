@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -55,65 +56,6 @@ type Post struct {
 }
 
 type Posts []Post
-
-//func (p *Post) Save() (err error) {
-//	return db.Save(p).Error
-//}
-//
-//func (p *Post) Find(id int64) (err error) {
-//	return db.First(p, id).Error
-//}
-//
-//func (p *Post) Delete() (err error) {
-//	return db.Delete(p).Error
-//}
-//
-//func (ps *Posts) SelectTags() (err error) {
-//	return db.Select("tags").Find(&ps).Error
-//}
-//
-//func (ps *Posts) SelectId() (err error) {
-//	return db.Select("id").Find(&ps).Error
-//}
-
-//func GetLocalTags() (tags []string, err error) {
-//	var posts Posts
-//
-//	err = posts.SelectTags()
-//	if err != nil {
-//		return
-//	}
-//
-//	for _, post := range posts {
-//		tags = append(tags, post.Tags)
-//	}
-//	return
-//}
-
-//func GetIdMap() (idMap map[int64]bool, err error) {
-//	idMap = make(map[int64]bool)
-//	var posts Posts
-//
-//	err = posts.SelectId()
-//	if err != nil {
-//		return
-//	}
-//
-//	if err == nil {
-//		for _, post := range posts {
-//			idMap[post.ID] = true
-//		}
-//	}
-//	return
-//}
-
-//func GetPosts(tag string, l, p int) (ps Posts, err error) {
-//	session := db.Limit(l).Offset((p - 1) * l).Order("id desc")
-//	if len(tag) > 0 {
-//		session = session.Where("tags LIKE ?", "%"+tag+"%")
-//	}
-//	return ps, session.Find(&ps).Error
-//}
 
 func (p Post) GetFileExt() string {
 	if strings.Contains(p.FileURL, "png") {
@@ -217,18 +159,17 @@ func (ps *Posts) FetchAll(tag string, l, page int) (err error) {
 	return nil
 }
 
-type PostTag struct{}
-
-func (pt *PostTag) TableName() string {
-	return "post_tag"
-}
-
-func (pt *PostTag) FetchAll() (pts []string, err error) {
+func (ps *Posts) FetchAllTags() (pts []string, err error) {
 	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(pt.TableName()))
-
+		b := tx.Bucket([]byte(ps.TableName()))
 		_ = b.ForEach(func(_, v []byte) error {
-			pts = append(pts, string(v))
+			var p Post
+			err := json.Unmarshal(v, &p)
+			if err != nil {
+				return err
+			}
+
+			pts = append(pts, p.Tags)
 			return nil
 		})
 		return nil
@@ -236,10 +177,24 @@ func (pt *PostTag) FetchAll() (pts []string, err error) {
 	return
 }
 
-func (pt *PostTag) Save(id int64, postTag string) (err error) {
-	return db.Update(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(pt.TableName()))
-		key := []byte(strconv.FormatInt(id, 10))
-		return b.Put(key, []byte(postTag))
+// SortTagsByTfIdf
+func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
+	var tags Tags
+	for _, tag := range strings.Split(p.Tags," ") {
+		if _, ok := tfIdf[tag]; !ok {
+			tfIdf[tag] = 0.0
+		}
+		tags = append(tags, Tag{Name: tag, TfIdf: tfIdf[tag]})
+	}
+
+	sort.Slice(tags, func(i, j int) bool {
+		return tags[i].TfIdf > tags[j].TfIdf
 	})
+
+	var parts []string
+	for _, tag := range tags {
+		parts = append(parts, tag.Name)
+	}
+	p.Tags = strings.Join(parts," ")
+	return nil
 }

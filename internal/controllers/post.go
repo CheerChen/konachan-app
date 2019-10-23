@@ -7,7 +7,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/humanize"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
@@ -28,8 +27,7 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	tfIdf := models.GetTfIdf()
 
-	post.Mark(tfIdf, 100)
-	post.Size = humanize.Bytes(uint64(post.FileSize))
+	post.Mark(tfIdf, map[string]float64{})
 
 	cJson(w, post, nil)
 }

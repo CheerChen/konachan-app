@@ -25,18 +25,18 @@ func GetDB() *bolt.DB {
 		log.Fatalf("open DB: %s", err)
 	}
 
-	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("post"))
-		return err
-	})
+	err = db.Update(func(tx *bolt.Tx) (err error) {
+		_, err = tx.CreateBucketIfNotExists([]byte("post"))
+		if err != nil {
+			return
+		}
 
-	if err != nil {
-		log.Fatalf("create bucket: %s", err)
-	}
-
-	err = db.Update(func(tx *bolt.Tx) error {
-		_, err := tx.CreateBucketIfNotExists([]byte("post_tag"))
-		return err
+		//_, err = tx.CreateBucketIfNotExists([]byte("post_tag"))
+		//if err != nil {
+		//	return
+		//}
+		//_, err = tx.CreateBucketIfNotExists([]byte("cache"))
+		return
 	})
 
 	if err != nil {

@@ -7,18 +7,18 @@ import (
 	"github.com/CheerChen/konachan-app/internal/log"
 )
 
-//var TfIdf map[string]float64
-
 func GetTfIdf() map[string]float64 {
-	//if len(TfIdf) != 0 {
-	//	return TfIdf
-	//}
-	globalTotal, globalTagCount := GetGlobalTagCount()
+	tags := GetRemoteTags()
+	tagMap := make(map[string]int)
+	tagSum := 0
+	for _, tag := range tags {
+		tagMap[tag.Name] = tag.Count
+		tagSum = tagSum + tag.Count
+	}
 
-	pt := &PostTag{}
-	pts, err := pt.FetchAll()
+	pts, err := (&Posts{}).FetchAllTags()
 	if err != nil {
-		log.Fatalf("fetch post tag: %s", err)
+		log.Fatalf("fetch all tags: %s", err)
 	}
 	tf1 := make(map[string]int)
 	tf2 := make(map[string]int)
@@ -45,10 +45,10 @@ func GetTfIdf() map[string]float64 {
 	tfIdf := make(map[string]float64)
 
 	for tag, tf1 := range tf1 {
-		if _, ok := globalTagCount[tag]; !ok {
-			globalTagCount[tag] = 1
+		if _, ok := tagMap[tag]; !ok {
+			tagMap[tag] = 1
 		}
-		idf := math.Log(float64(globalTotal) / (float64(globalTagCount[tag] + 1)))
+		idf := math.Log(float64(tagSum) / (float64(tagMap[tag] + 1)))
 		tf := float64(tf1) / float64(tf2[tag])
 		tfIdf[tag] = tf * idf
 	}
