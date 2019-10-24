@@ -225,12 +225,12 @@
 
         $.getJSON(url, function (data) {
             $.each(data.data, function (i, item) {
-                var ddaystrs = new Array();
-                ddaystrs = item.tags.split(" ");
+                let ddaystrs = item.tags.split(" ");
 
                 let title = `<h4 class="all-copy">
 <a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
-</h4><p>tfidf+Score：${item.my_score} / tfidf：${item.tf_idf} / Score：${item.score} / ${item.width}x${item.height} /
+</h4><p>tfidf+Score：${parseFloat(item.my_score).toFixed(4)} / tfidf：${parseFloat(item.tf_idf).toFixed(4)}
+/ Score：${item.score} / Disp: ${item.width}x${item.height} / Size: ${item.size} / Rate: ${item.rating}</p>
 <a href="/delete/${item.id}" target="_blank">Delete</a></p>`;
                 let slideItem = {
                     msrc: `/preview/${item.id}`,

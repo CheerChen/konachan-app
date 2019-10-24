@@ -1,6 +1,7 @@
 package models
 
 import (
+	"math"
 	"strings"
 
 	"github.com/CheerChen/konachan-app/internal/humanize"
@@ -22,14 +23,8 @@ func (p *Post) Mark(tfIdf, avgMap map[string]float64) {
 	}
 	p.TfIDf = tfIdfSum / float64(len(tags))
 
-	var userScore float64
-	if avg, ok := avgMap[p.Rating]; ok {
-		userScore = float64(p.Score) / avg
-	} else {
-		userScore = float64(p.Score) / 100
-	}
-
-	p.MyScore = (p.TfIDf + userScore) / float64(len(tags)+1)
+	//p.MyScore = (tfIdfSum + float64(p.Score)/avgMap[p.Rating]) / float64(len(tags)+1)
+	p.MyScore = (tfIdfSum + math.Log(float64(p.Score+1)/avgMap[p.Rating])) / float64(len(tags)+1)
 
 	_ = p.SortTagsByTfIdf(tfIdf)
 
@@ -67,6 +62,9 @@ func (ps *Posts) Mark(tfIdf map[string]float64) error {
 			avgMap[ranting] = float64(sum) / float64(l)
 		}
 	}
+
+	log.Infof("create lenMap: %v", lenMap)
+	log.Infof("create avgMap: %v", avgMap)
 
 	for k := range *ps {
 

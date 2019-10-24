@@ -28,7 +28,7 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	tag := ps.ByName("tag")[1:]
 
-	posts := &models.Posts{}
+	posts := models.Posts{}
 	err = posts.FetchAll(tag, limit, page)
 
 	if err != nil {
@@ -36,7 +36,7 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	if len(*posts) == 0 {
+	if len(posts) == 0 {
 		http.Error(w, "no posts", http.StatusNotFound)
 		return
 	}
@@ -48,7 +48,7 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	cJson(w, posts, map[string]int{
-		"total": len(*posts),
+		"total": len(posts),
 	})
 	return
 
