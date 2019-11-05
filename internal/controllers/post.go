@@ -60,9 +60,16 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return posts[i].MyScore > posts[j].MyScore
 	})
 
+	var favCount int
+	for _, p := range posts {
+		if p.IsFav {
+			favCount++
+		}
+	}
+
 	cJson(w, posts, map[string]int{
-		"total":   len(posts),
-		"reduced": len(posts),
+		"total": len(posts),
+		"fav":   favCount,
 	})
 	return
 }
