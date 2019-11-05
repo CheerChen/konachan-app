@@ -3,7 +3,9 @@ package controllers
 import (
 	"bytes"
 	"image"
+	"image/gif"
 	"image/jpeg"
+	"image/png"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -25,7 +27,9 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	tag := ps.ByName("tag")[1:]
-	posts, err := models.GetPosts(tag, limit, page)
+
+	posts := models.Posts{}
+	err = posts.FetchAll(tag, limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -38,10 +42,13 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	tfIdf := models.GetTfIdf()
-	marked := posts.MarkAndReduce(0.0, tfIdf)
+	err = posts.Mark(tfIdf)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
+	}
 
-	cJson(w, marked, map[string]int{
-		"total": len(marked),
+	cJson(w, posts, map[string]int{
+		"total": len(posts),
 	})
 	return
 
@@ -56,7 +63,8 @@ func Dis(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	idMap, err := models.GetIdMap()
+	posts := &models.Posts{}
+	idMap, err := posts.FetchAllId()
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -139,7 +147,7 @@ func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 	defer file.Close()
-	img, _, err := image.Decode(file)
+	img, format, err := image.Decode(file)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -153,9 +161,18 @@ func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	dst := imaging.Resize(img, post.ActualPreviewWidth, post.ActualPreviewHeight, imaging.Lanczos)
 	buf := new(bytes.Buffer)
-	err = jpeg.Encode(buf, dst, nil)
+	dst := imaging.Resize(img, post.ActualPreviewWidth, post.ActualPreviewHeight, imaging.Lanczos)
+	switch format {
+	case "gif":
+		err = gif.Encode(buf, dst, nil)
+	case "png":
+		err = png.Encode(buf, dst)
+	case "jpeg":
+		fallthrough
+	default:
+		err = jpeg.Encode(buf, dst, nil)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

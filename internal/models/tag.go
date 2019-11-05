@@ -12,7 +12,3 @@ type Tag struct {
 }
 
 type Tags []Tag
-
-//func (p Tags) Len() int           { return len(p) }
-//func (p Tags) Less(i, j int) bool { return p[i].TfIdf > p[j].TfIdf }
-//func (p Tags) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }

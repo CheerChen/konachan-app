@@ -53,7 +53,7 @@ func DownloadFile(file *KFile, u string) {
 	//}
 
 	// start download
-	log.Infof("Downloading %v...", req.URL())
+	log.Infof("downloading %v...", req.URL())
 	resp := client.Do(req)
 	if resp.HTTPResponse != nil {
 		log.Infof("HTTPResponse %v", resp.HTTPResponse.Status)
@@ -80,11 +80,11 @@ Loop:
 
 	// check for errors
 	if err := resp.Err(); err != nil {
-		log.Errorf("Download failed: %v", err)
+		log.Errorf("download: %s", err)
 		return
 	}
 
-	log.Infof("Download saved to ./%v", resp.Filename)
+	log.Infof("save to ./%s", resp.Filename)
 
 	return
 }

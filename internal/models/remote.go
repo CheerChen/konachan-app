@@ -2,7 +2,6 @@ package models
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -41,7 +40,7 @@ func GetRemotePosts(tags string, limit, page int) (ps Posts) {
 	if getBytes == nil {
 		body, err := proxyGet(url)
 		if err != nil {
-			log.Errorf("Get remote url failed: %s", err)
+			log.Errorf("http get: %s", err)
 			return
 		}
 		getBytes = body
@@ -50,7 +49,7 @@ func GetRemotePosts(tags string, limit, page int) (ps Posts) {
 
 	err := json.Unmarshal(getBytes, &ps)
 	if err != nil {
-		log.Errorf("Cache json Unmarshal failed: %s", err)
+		log.Errorf("json Unmarshal: %s", err)
 	}
 
 	return
@@ -60,13 +59,13 @@ func GetRemotePost(postId int64) (target Post, err error) {
 	url := fmt.Sprintf(PostByTagUrl, postId)
 	body, err := proxyGet(url)
 	if err != nil {
-		log.Errorf("Get remote url failed: %s", err)
+		log.Errorf("http get: %s", err)
 		return
 	}
 	var posts Posts
 	err = json.Unmarshal(body, &posts)
 	if err != nil {
-		log.Errorf("Body json Unmarshal failed: %s", err)
+		log.Errorf("json Unmarshal: %s", err)
 		return
 	}
 
@@ -75,33 +74,25 @@ func GetRemotePost(postId int64) (target Post, err error) {
 			return post, nil
 		}
 	}
-	return target, errors.New("post id not in page")
+	return target, ErrRecordNotFound
 }
 
-func GetGlobalTagCount() (total int, tagMap map[string]int) {
-	tagMap = make(map[string]int)
-
+func GetRemoteTags() (ts Tags) {
 	url := fmt.Sprintf(TagUrl, TagLimit)
 	getBytes := cc.Get(url)
 	if getBytes == nil {
 		body, err := proxyGet(url)
 		if err != nil {
-			log.Errorf("Get remote url failed: %s", err)
+			log.Errorf("http get: %s", err)
 			return
 		}
 		getBytes = body
 		cc.Set(url, body)
 	}
 
-	tags := Tags{}
-	err := json.Unmarshal(getBytes, &tags)
+	err := json.Unmarshal(getBytes, &ts)
 	if err != nil {
-		log.Errorf("Cache json Unmarshal failed: %s", err)
-	}
-
-	for _, tag := range tags {
-		tagMap[tag.Name] = tag.Count
-		total = total + tag.Count
+		log.Errorf("json Unmarshal: %s", err)
 	}
 
 	return

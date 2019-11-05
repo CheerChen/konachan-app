@@ -61,19 +61,20 @@ func worker(ids <-chan int64, c chan<- models.Post) {
 		var post models.Post
 		err := post.Find(id)
 		if err == nil {
-			log.Infof("Found ID(%d) in db", post.ID)
+			log.Infof("find ID(%d) in db", post.ID)
 			continue
 		}
 		post, err = models.GetRemotePost(id)
 		if err != nil {
-			log.Warnf("GetRemotePost ID(%d) failed: %s", id, err.Error())
+			log.Warnf("fetch ID(%d) from web: %s", id, err.Error())
 			continue
 		}
 		err = post.Save()
 		if err != nil {
-			log.Errorf("Sync FAILED to db ID(%d) failed: %s", post.ID, err.Error())
+			log.Errorf("save post ID(%d): %s", post.ID, err.Error())
 			continue
 		}
+
 		c <- post
 	}
 }

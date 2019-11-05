@@ -8,7 +8,7 @@ import (
 
 func worker(pages <-chan int, c chan<- Post, tags string) {
 	for page := range pages {
-		log.Infof("Start fetching page %d...", page)
+		log.Infof("fetching page %d...", page)
 		posts := GetRemotePosts(tags, 100, page)
 		for _, post := range posts {
 			c <- post
@@ -20,10 +20,11 @@ func headman(limit, p int) <-chan int {
 	pages := make(chan int)
 	go func() {
 		defer close(pages)
-		endPage := p + limit/100
-		for p < endPage {
-			pages <- p
-			p += 1
+		startPage := (p-1)*(limit/100) + 1
+		endPage := p*(limit/100) + 1
+		for startPage < endPage {
+			pages <- startPage
+			startPage += 1
 		}
 	}()
 	return pages

@@ -1,41 +1,47 @@
 package models
 
 import (
-	"os"
+	"errors"
+	"time"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/boltdb/bolt"
 
 	"github.com/CheerChen/konachan-app/internal/cache"
 	"github.com/CheerChen/konachan-app/internal/log"
 )
 
-var db *gorm.DB
+var db *bolt.DB
 var cc *cache.Handler
+var ErrRecordNotFound = errors.New("record not found")
 
 func Init() {
 	db = GetDB()
 	cc = &cache.Handler{"./cache", 60}
 }
 
-func GetDB() *gorm.DB {
-	dbFile := "sqlite.db"
-	if _, err := os.Stat(dbFile); err != nil {
-		_, err = os.Create(dbFile)
+func GetDB() *bolt.DB {
+	db, err := bolt.Open("my.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
+	if err != nil {
+		log.Fatalf("open DB: %s", err)
+	}
+
+	err = db.Update(func(tx *bolt.Tx) (err error) {
+		_, err = tx.CreateBucketIfNotExists([]byte("post"))
 		if err != nil {
-			log.Fatalf("Init DB failed: %s", err)
+			return
 		}
+
+		//_, err = tx.CreateBucketIfNotExists([]byte("post_tag"))
+		//if err != nil {
+		//	return
+		//}
+		//_, err = tx.CreateBucketIfNotExists([]byte("cache"))
+		return
+	})
+
+	if err != nil {
+		log.Fatalf("create bucket: %s", err)
 	}
 
-	db, err := gorm.Open("sqlite3", dbFile)
-	if err != nil {
-		log.Fatalf("Init DB failed: %s", err)
-	}
-
-	// 自动迁移模式
-	err = db.AutoMigrate(&Post{}).Error
-	if err != nil {
-		log.Fatalf("AutoMigrate failed: %s", err)
-	}
 	return db
 }
