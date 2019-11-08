@@ -3,7 +3,6 @@
     <meta charset="utf-8">
     <meta name="referrer" content="never"/>
     <title>Konachan-app</title>
-    <link rel="stylesheet" href="/web/static/bootstrap.min.css">
 
     <!-- Import PhotoSwipe Styles -->
     <link rel="stylesheet" href="/web/static/photoswipe.css">
@@ -80,7 +79,7 @@
     </style>
 </head>
 <body>
-<div class="container">
+<div class="container" id="app">
     <div class="row">
         <div class="col-sm-12 col-sm-offset-0">
 
@@ -100,9 +99,13 @@
             </small>
 
             <!-- Galley wrapper that contains all items -->
-            <div id="gallery" class="gallery" itemscope itemtype="http://schema.org/ImageGallery">
-
-
+            <div class="gallery">
+                <figure v-for="(item, index) in slides">
+                    <a :href="item.src" :data-caption="item.alt" :data-width="item.w"
+                       :data-height="item.h">
+                        <img :src="item.msrc" :alt="item.alt" :style="[item.fav ? 'opacity:0.1': '']">
+                    </a>
+                </figure>
             </div>
 
         </div>
@@ -162,108 +165,31 @@
 </div>
 
 <!-- Import jQuery and PhotoSwipe Scripts -->
-<script src="/web/static/jquery-2.1.1.min.js"></script>
 <script src="/web/static/photoswipe.min.js"></script>
 <script src="/web/static/photoswipe-ui-default.min.js"></script>
 
+<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
 <script>
-    'use strict';
+    function add2Tags(tag) {
+        return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
+    }
 
-    /* global jQuery, PhotoSwipe, PhotoSwipeUI_Default, console */
-
-
-    (function ($) {
-
-        var getUrlParameter = function getUrlParameter(sParam) {
-            var sPageURL = window.location.search.substring(1),
-                sURLVariables = sPageURL.split('&'),
-                sParameterName,
-                i;
-
-            for (i = 0; i < sURLVariables.length; i++) {
-                sParameterName = sURLVariables[i].split('=');
-
-                if (sParameterName[0] === sParam) {
-                    return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
-                }
-            }
-        };
-
-        // Init empty gallery array
-        var container = [];
-
-        // Loop over gallery items and push it to the array
-        // $('h1').click(function (event) {
-        let page = 1;
-        if (getUrlParameter("page") != null) {
-            page = getUrlParameter("page")
-        }
-        let limit = 100;
-        if (getUrlParameter("limit") != null) {
-            limit = getUrlParameter("limit")
-            $(".page-limits").val(limit)
-        }
-        let url = `/remote/${limit}/${page}/`;
-
-
-        let tag = "";
-        if (getUrlParameter("tag") != null) {
-            tag = getUrlParameter("tag")
-            url += tag;
-            if (tag.length > 0) {
-                $('h1').text(tag);
-            }
-        }
-
-        function add2Tags(tag) {
-            return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
-        }
-
-        $.getJSON(url, function (data) {
-            $('#posts-h1').html("Posts (" + data.meta.fav + "/" + data.meta.total + ")");
-
-            $.each(data.data, function (i, item) {
-                let ddaystrs = item.tags.split(" ");
-
-                let title = `<h4 class="all-copy">
-<a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
-</h4><p>tfidf+Score：${parseFloat(item.my_score).toFixed(4)} / tfidf：${parseFloat(item.tf_idf).toFixed(4)}
-/ Score：${item.score} / Disp: ${item.width}x${item.height} / Size: ${item.size} / Rate: ${item.rating}</p>
-<a href="/download/${item.id}" target="_blank">Download</a></p>`;
-                if (item.is_fav) {
-                    title += `<a href="/delete/${item.id}" target="_blank">Delete</a>`;
-                }
-                let slideItem = {
-                    msrc: item.preview_url,
-                    src: item.sample_url,
-                    w: item.sample_width,
-                    h: item.sample_height,
-                    title: title
-                };
-                container.push(slideItem);
-                let figureHtml = "";
-                if (item.is_fav) {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
-<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description" style="opacity:0.1"></a></figure>`
-                } else {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
-<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description"></a></figure>`
-                }
-                $("#gallery").append(figureHtml);
-            });
-
-            // Define click event on gallery item
-            $('.gallery a').click(function (event) {
-
-                // Prevent location change
-                event.preventDefault();
-
-                // Define object and gallery options
-                var $pswp = $('.pswp')[0],
-                    options = {
-                        index: $(this).parent('figure').index(),
+    var app = new Vue(
+        {
+            el: '#app',
+            data: {
+                limit: 100,
+                page: 1,
+                tag: "",
+                slides: [],
+            },
+            methods: {
+                loadPhotoswipe: function (event) {
+                    let $pswp = $('.pswp')[0];
+                    let options = {
+                        index: event.target.index(),
                         bgOpacity: 0.85,
                         showHideOpacity: true,
                         closeOnScroll: false,
@@ -273,67 +199,48 @@
 
                     };
 
-                // Initialize PhotoSwipe
-                var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, container, options);
-                gallery.init();
-            });
-        });
+                    // Initialize PhotoSwipe
+                    var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, options);
+                    gallery.init();
+                }
+            },
+            mounted() {
+                // var that = this
+                axios.get(`/remote/${this.limit}/${this.page}/${this.tag}`)
+                    .then( (response) => {
+                        console.log(response)
+                        response.data.data.forEach((item) => {
+                            let ddaystrs = item.tags.split(" ");
 
-        $('.next_page').click(function (event) {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
+                            let title = `<h4 class="all-copy">
+<a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
+</h4><p>tfidf+Score：${parseFloat(item.my_score).toFixed(4)} / tfidf：${parseFloat(item.tf_idf).toFixed(4)}
+/ Score：${item.score} / Disp: ${item.width}x${item.height} / Size: ${item.size} / Rate: ${item.rating}</p>
+<a href="/download/${item.id}" target="_blank">Download</a></p>`;
+                            if (item.is_fav) {
+                                title += `<a href="/delete/${item.id}" target="_blank">Delete</a>`;
+                            }
+                            let slideItem = {
+                                msrc: item.preview_url,
+                                src: item.sample_url,
+                                w: item.sample_width,
+                                h: item.sample_height,
+                                title: title,
+                                alt: item.tags,
+                                fav: item.is_fav,
+                            };
+                            this.slides.push(slideItem);
+                        });
+
+                        console.log(response);
+                    })
+                    .catch(function (error) {
+                        console.log(error);
+                    });
             }
-            page++;
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-
-            let limit = $(".page-limits").val();
-
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
-        });
-
-        $('.prev_page').click(function (event) {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
-            }
-            if (page > 1) {
-                page--
-            }
-
-            let limit = $(".page-limits").val();
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
-        });
-
-        $(".page-limits").change(function () {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
-            }
-
-            let limit = $(".page-limits").val();
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
-        });
-
-    }(jQuery));
+        }
+    )
 </script>
+
 </body>
 </html>
