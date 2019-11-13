@@ -33,21 +33,14 @@ func GetRemotePosts(tags string, limit, page int) (ps Posts) {
 	req.URL.RawQuery = q.Encode()
 
 	url := req.URL.String()
-	//url := fmt.Sprintf(PostUrl, limit, page)
-	//if len(tags) != 0 {
-	//}
-	getBytes := cc.Get(url)
-	if getBytes == nil {
-		body, err := proxyGet(url)
-		if err != nil {
-			log.Errorf("http get: %s", err)
-			return
-		}
-		getBytes = body
-		cc.Set(url, body)
+
+	body, err := proxyGet(url)
+	if err != nil {
+		log.Errorf("http get: %s", err)
+		return
 	}
 
-	err := json.Unmarshal(getBytes, &ps)
+	err = json.Unmarshal(body, &ps)
 	if err != nil {
 		log.Errorf("json Unmarshal: %s", err)
 	}

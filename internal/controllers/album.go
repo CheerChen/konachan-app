@@ -9,12 +9,14 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 
 	"github.com/disintegration/imaging"
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/CheerChen/konachan-app/internal/kfile"
+	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
@@ -35,6 +37,7 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	log.Infof("fetch posts: %d", len(posts))
 
 	if len(posts) == 0 {
 		http.Error(w, "no posts", http.StatusNotFound)
@@ -46,6 +49,10 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
+
+	sort.Slice(posts, func(i, j int) bool {
+		return posts[i].MyScore > posts[j].MyScore
+	})
 
 	cJson(w, posts, map[string]int{
 		"total": len(posts),

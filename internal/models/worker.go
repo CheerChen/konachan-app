@@ -16,12 +16,12 @@ func worker(pages <-chan int, c chan<- Post, tags string) {
 	}
 }
 
-func headman(limit, p int) <-chan int {
+func headman(pageSize, p int) <-chan int {
 	pages := make(chan int)
 	go func() {
 		defer close(pages)
-		startPage := (p-1)*(limit/100) + 1
-		endPage := p*(limit/100) + 1
+		startPage := (p-1)*(pageSize/100) + 1
+		endPage := p*(pageSize/100) + 1
 		for startPage < endPage {
 			pages <- startPage
 			startPage += 1
@@ -30,8 +30,8 @@ func headman(limit, p int) <-chan int {
 	return pages
 }
 
-func Work(tags string, limit, p int) (result Posts) {
-	pageCh := headman(limit, p)
+func Work(tags string, ps, p int) (result Posts) {
+	pageCh := headman(ps, p)
 	resultCh := make(chan Post)
 	var wg sync.WaitGroup
 	const numWorkers = 10

@@ -33,15 +33,13 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 }
 
 func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	limit, page, err := GetPager(w, ps)
+	pageSize, page, err := GetPager(w, ps)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 	}
 
-	posts := models.Work(ps.ByName("tag")[1:], limit, page)
-
-	//posts := kpost.GetPosts(ps.ByName("tag"), limit, page)
+	posts := models.Work(ps.ByName("tag")[1:], pageSize, page)
 
 	log.Infof("fetch posts: %d", len(posts))
 

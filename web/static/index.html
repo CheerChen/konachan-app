@@ -5,6 +5,7 @@
     <title>Konachan-app</title>
 
     <!-- Import PhotoSwipe Styles -->
+    <link rel="stylesheet" href="/web/static/bootstrap.min.css">
     <link rel="stylesheet" href="/web/static/photoswipe.css">
     <link rel="stylesheet" href="/web/static/default-skin/default-skin.css">
 
@@ -64,18 +65,25 @@
             }
         }
 
-        .next_page {
-            font-size: 12px;
+        .card {
+            transition: all 0.5s;
         }
 
-        .page-limits {
-            font-size: 12px;
+        .card-enter,
+        .card-leave-to {
+            opacity: 0;
+            transform: scale(0);
         }
 
-        .prev_page {
-            font-size: 12px;
+        .card-enter-to {
+            opacity: 1;
+            transform: scale(1);
         }
 
+        .card-move {
+            opacity: 1;
+            transition: all 0.5s;
+        }
     </style>
 </head>
 <body>
@@ -84,30 +92,65 @@
         <div class="col-sm-12 col-sm-offset-0">
 
             <h1 class="text-center">
-                <a style="color: #333333;" href="/" title="To Posts" id="posts-h1">Posts</a> /
-                <a style="color: #333333;" href="/album" title="To Album" id="album-h1">Album</a>
+                <a style="color: #333333;" href="/" title="To Posts" @click.prevent="mode='remote';query='';page=1">Posts</a>
+                /
+                <a style="color: #333333;" href="/" title="To Album"
+                   @click.prevent="mode='album';query='';page=1">Album</a>
                 <br>
             </h1>
+
             <small>
-                <select class="page-limits">
+                <select v-model="pageSize">
                     <option value="100">100p</option>
-                    </option>
+                    <option value="200">200p</option>
+                    <option value="300">300p</option>
+                    <option value="400">400p</option>
                     <option value="500">500p</option>
                 </select>
-                <a class="prev_page" rel="prev" href="javascript:;">← Prev</a>
-                <a class="next_page" rel="next" href="javascript:;">Next →</a>
+                <select v-model="orderBy">
+                    <option value="my_score">tfidf+Score</option>
+                    <option value="tf_idf">tfidf</option>
+                    <option value="score">Score</option>
+                    <option value="id">id</option>
+                </select>
+            </small>
+
+            <small style="float: right">
+                <a @click.prevent="page-=1" href="#">← Prev</a>
+                <a @click.prevent="page+=1" href="#">Next →</a>
             </small>
 
             <!-- Galley wrapper that contains all items -->
-            <div class="gallery">
-                <figure v-for="(item, index) in slides">
-                    <a :href="item.src" :data-caption="item.alt" :data-width="item.w"
-                       :data-height="item.h">
-                        <img :src="item.msrc" :alt="item.alt" :style="[item.fav ? 'opacity:0.1': '']">
+            <transition-group tag="div" class="gallery">
+                <figure class="card" v-for="(item, index) in slides" :key="item.id" @click.prevent="goTo(index)">
+                    <a :href="item.src" :data-caption="item.tags" :data-width="item.w" :data-height="item.h">
+                        <img :src="item.msrc" :alt="item.tags"
+                             :style="{ opacity : mode=='remote' && item.fav ? '0.1': ''}">
                     </a>
+                    <figcaption ref="figcaption" style="display:none;">
+                        <h4 class="all-copy">
+                            <a :href="'https://konachan.com/post/show/'+item.id" target="_blank">
+                                {{item.id}}
+                            </a> -
+                            <a v-for="(tag, index) in item.tags.split(' ')" :href="'?tag='+encodeURIComponent(tag)">
+                                {{tag}}
+                            </a>
+                        </h4>
+                        <p>
+                            tfidf+Score：{{item.my_score.toFixed(4)}} /
+                            tfidf：{{item.tf_idf.toFixed(4)}} /
+                            Score：{{item.score}} /
+                            Disp: {{item.width}}x{{item.height}} /
+                            Size: {{item.size}} /
+                            Rate: {{item.rating}}
+                        </p>
+                        <p>
+                            <a v-if="!item.fav" :href="'/download/'+item.id" target="_blank">Download</a>
+                            <a v-if="item.fav" :href="'/delete/'+item.id" target="_blank">Delete</a>
+                        </p>
+                    </figcaption>
                 </figure>
-            </div>
-
+            </transition-group>
         </div>
     </div>
 </div>
@@ -168,75 +211,99 @@
 <script src="/web/static/photoswipe.min.js"></script>
 <script src="/web/static/photoswipe-ui-default.min.js"></script>
 
+<script src="/web/static/axios.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
 
 <script>
-    function add2Tags(tag) {
-        return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
-    }
-
     var app = new Vue(
         {
             el: '#app',
             data: {
-                limit: 100,
+                pageSize: 100,
                 page: 1,
-                tag: "",
+                query: "",
                 slides: [],
+                mode: "remote",
+                orderBy: "my_score",
+            },
+            watch: {
+                page: function () {
+                    this.updateSlides()
+                },
+                pageSize: function () {
+                    this.updateSlides()
+                },
+                query: function () {
+                    this.updateSlides()
+                },
+                mode: function () {
+                    this.updateSlides()
+                },
+                orderBy: function () {
+                    let v = this.orderBy
+                    this.slides.sort((a, b) => (a[v] < b[v]) ? 1 : ((b[v] < a[v]) ? -1 : 0));
+                }
             },
             methods: {
-                loadPhotoswipe: function (event) {
-                    let $pswp = $('.pswp')[0];
+                goTo: function (index) {
+                    let $pswp = document.querySelectorAll('.pswp')[0];
                     let options = {
-                        index: event.target.index(),
+                        index: index,
                         bgOpacity: 0.85,
                         showHideOpacity: true,
                         closeOnScroll: false,
-                        shareButtons: [
-                            {id: 'download', label: 'Download image', url: '{{raw_image_url}}', download: true}
-                        ],
-
+                        shareEl: false,
+                        getThumbBoundsFn: function (index) {
+                            var thumbnail = document.querySelectorAll('.card')[index];
+                            var pageYScroll = window.pageYOffset || document.documentElement.scrollTop;
+                            var rect = thumbnail.getBoundingClientRect();
+                            return {x: rect.left, y: rect.top + pageYScroll, w: rect.width};
+                        }
                     };
+                    (new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, options)).init()
+                },
+                updateSlides: function () {
+                    this.slides = [];
+                    this.page = this.page <= 0 ? 1 : this.page;
+                    this.orderBy = "my_score";
+                    let params = ['', this.mode, this.pageSize, this.page, this.query];
 
-                    // Initialize PhotoSwipe
-                    var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, options);
-                    gallery.init();
+                    axios.get(params.join("/"))
+                        .then((response) => {
+                            // console.log(response);
+                            response.data.data.forEach((item) => {
+                                let slideItem = {
+                                    msrc: this.mode == "remote" ? item.preview_url : `/preview/${item.id}`,
+                                    src: this.mode == "remote" ? item.sample_url : `/sample/${item.id}`,
+                                    w: item.sample_width,
+                                    width: item.width,
+                                    h: item.sample_height,
+                                    height: item.height,
+                                    title: "",
+                                    tags: item.tags,
+                                    fav: item.is_fav,
+                                    id: item.id,
+                                    my_score: item.my_score,
+                                    score: item.score,
+                                    tf_idf: item.tf_idf,
+                                    rating: item.rating,
+                                    size: item.size,
+                                };
+                                this.slides.push(slideItem);
+                            });
+                        })
+                        .finally(() => {
+                            this.slides.forEach((item, index) => {
+                                item.title = this.$refs.figcaption[index].innerHTML
+                            });
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
                 }
             },
             mounted() {
-                // var that = this
-                axios.get(`/remote/${this.limit}/${this.page}/${this.tag}`)
-                    .then( (response) => {
-                        console.log(response)
-                        response.data.data.forEach((item) => {
-                            let ddaystrs = item.tags.split(" ");
-
-                            let title = `<h4 class="all-copy">
-<a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
-</h4><p>tfidf+Score：${parseFloat(item.my_score).toFixed(4)} / tfidf：${parseFloat(item.tf_idf).toFixed(4)}
-/ Score：${item.score} / Disp: ${item.width}x${item.height} / Size: ${item.size} / Rate: ${item.rating}</p>
-<a href="/download/${item.id}" target="_blank">Download</a></p>`;
-                            if (item.is_fav) {
-                                title += `<a href="/delete/${item.id}" target="_blank">Delete</a>`;
-                            }
-                            let slideItem = {
-                                msrc: item.preview_url,
-                                src: item.sample_url,
-                                w: item.sample_width,
-                                h: item.sample_height,
-                                title: title,
-                                alt: item.tags,
-                                fav: item.is_fav,
-                            };
-                            this.slides.push(slideItem);
-                        });
-
-                        console.log(response);
-                    })
-                    .catch(function (error) {
-                        console.log(error);
-                    });
+                this.updateSlides()
             }
         }
     )
