@@ -1,6 +1,7 @@
 package models
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -33,14 +34,18 @@ func GetRemotePosts(tags string, limit, page int) (ps Posts) {
 	req.URL.RawQuery = q.Encode()
 
 	url := req.URL.String()
-
-	body, err := proxyGet(url)
-	if err != nil {
-		log.Errorf("http get: %s", err)
-		return
+	getBytes := cc.Get(url)
+	if getBytes == nil {
+		body, err := proxyGet(url)
+		if err != nil {
+			log.Errorf("http get: %s", err)
+			return
+		}
+		getBytes = body
+		cc.Set(url, body)
 	}
 
-	err = json.Unmarshal(body, &ps)
+	err := json.Unmarshal(getBytes, &ps)
 	if err != nil {
 		log.Errorf("json Unmarshal: %s", err)
 	}
@@ -93,18 +98,15 @@ func GetRemoteTags() (ts Tags) {
 
 func proxyGet(url string) (b []byte, err error) {
 	client := &http.Client{}
-	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080",
-	//	nil,
-	//	&net.Dialer{
-	//		Timeout:   5 * time.Second,
-	//		KeepAlive: 5 * time.Second,
-	//	},
-	//)
-	//client.Transport = &http.Transport{
-	//	Dial: dialer.Dial,
-	//	//Proxy:           http.ProxyURL(proxy),
-	//	//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//}
+	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080", nil, proxy.Direct)
+
+	client.Transport = &http.Transport{
+		//DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+		//	c, e := dialer.Dial(network, addr)
+		//	return c, e
+		//},
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	log.Infof("fetch url %s", url)
 	resp, err := client.Get(url)
 	if err != nil {

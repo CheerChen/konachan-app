@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/CheerChen/konachan-app/internal/log"
+
 	"github.com/boltdb/bolt"
 )
 
@@ -122,6 +124,8 @@ func (ps *Posts) FetchAllId() (idMap map[int64]bool, err error) {
 }
 
 func (ps *Posts) FetchAll(tag string, l, page int) (err error) {
+	log.Infof("fetch album tag=%s, limit=%d, page=%d", tag, l, page)
+
 	err = db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(ps.TableName()))
 
@@ -140,6 +144,11 @@ func (ps *Posts) FetchAll(tag string, l, page int) (err error) {
 		})
 		return nil
 	})
+
+	sort.Slice(*ps, func(i, j int) bool {
+		return (*ps)[i].ID > (*ps)[j].ID
+	})
+
 	min, max, start, end := 0, len(*ps), (page-1)*l, page*l
 
 	if start < min {
@@ -180,7 +189,7 @@ func (ps *Posts) FetchAllTags() (pts []string, err error) {
 // SortTagsByTfIdf
 func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
 	var tags Tags
-	for _, tag := range strings.Split(p.Tags," ") {
+	for _, tag := range strings.Split(p.Tags, " ") {
 		if _, ok := tfIdf[tag]; !ok {
 			tfIdf[tag] = 0.0
 		}
@@ -195,6 +204,6 @@ func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
 	for _, tag := range tags {
 		parts = append(parts, tag.Name)
 	}
-	p.Tags = strings.Join(parts," ")
+	p.Tags = strings.Join(parts, " ")
 	return nil
 }
