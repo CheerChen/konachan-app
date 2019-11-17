@@ -15,6 +15,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 
 	"github.com/CheerChen/konachan-app/internal/kfile"
+	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
@@ -26,15 +27,14 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 	}
 
-	tag := ps.ByName("tag")[1:]
-
 	posts := models.Posts{}
-	err = posts.FetchAll(tag, limit, page)
+	err = posts.FetchAll(ps.ByName("tag")[1:], limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
+	log.Infof("fetch posts: %d", len(posts))
 
 	if len(posts) == 0 {
 		http.Error(w, "no posts", http.StatusNotFound)
@@ -117,8 +117,7 @@ func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	_, _ = w.Write([]byte("<html><body><script>window.location.href=\"about:blank\";window.close();</script></body></html>"))
-
+	cJson(w, "OK", nil)
 	return
 }
 
@@ -178,6 +177,7 @@ func Preview(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 	w.Header().Set("Content-type", pic.Header)
+	w.Header().Set("Cache-control", "max-age=315360000")
 	w.Write(buf.Bytes())
 }
 
@@ -208,6 +208,7 @@ func Sample(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 	w.Header().Set("Content-type", pic.Header)
+	w.Header().Set("Cache-control", "max-age=315360000")
 	w.Write(byte)
 
 }

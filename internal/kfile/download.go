@@ -39,17 +39,14 @@ func DownloadFile(file *KFile, u string) {
 	client := grab.NewClient()
 	req, _ := grab.NewRequest(filePath, u)
 
-	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:10808",
-	//	nil,
-	//	&net.Dialer{
-	//		Timeout:   10 * time.Second,
-	//		KeepAlive: 10 * time.Second,
-	//	},
-	//)
+	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080", nil, proxy.Direct)
+	//
 	//client.HTTPClient.Transport = &http.Transport{
-	//	Dial: dialer.Dial,
-	//	//Proxy:           http.ProxyURL(proxy),
-	//	//TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	//	DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+	//		c, e := dialer.Dial(network, addr)
+	//		return c, e
+	//	},
+	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	//}
 
 	// start download

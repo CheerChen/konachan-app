@@ -3,9 +3,9 @@
     <meta charset="utf-8">
     <meta name="referrer" content="never"/>
     <title>Konachan-app</title>
-    <link rel="stylesheet" href="/web/static/bootstrap.min.css">
 
     <!-- Import PhotoSwipe Styles -->
+    <link rel="stylesheet" href="/web/static/bootstrap.min.css">
     <link rel="stylesheet" href="/web/static/photoswipe.css">
     <link rel="stylesheet" href="/web/static/default-skin/default-skin.css">
 
@@ -65,53 +65,116 @@
             }
         }
 
-        .next_page {
-            font-size: 12px;
+        .card {
+            transition: all 0.5s;
         }
 
-        .page-limits {
-            font-size: 12px;
+        .card-enter,
+        .card-leave-to {
+            opacity: 0;
+            transform: scale(0);
         }
 
-        .prev_page {
-            font-size: 12px;
+        .card-enter-to {
+            opacity: 1;
+            transform: scale(1);
         }
 
+        .card-move {
+            opacity: 1;
+            transition: all 0.5s;
+        }
+
+        .tag [data-role="remove"] {
+            margin-left: 8px;
+            cursor: pointer;
+        }
+
+        .tag [data-role="remove"]:after {
+            content: "x";
+            padding: 0px 2px;
+        }
     </style>
 </head>
 <body>
-<div class="container">
+
+<!-- Vue app -->
+<div class="container" id="app">
     <div class="row">
         <div class="col-sm-12 col-sm-offset-0">
 
             <h1 class="text-center">
-                <a style="color: #333333;" href="/" title="To Posts" id="posts-h1">Posts</a> /
-                <a style="color: #333333;" href="/album" title="To Album" id="album-h1">Album</a>
-                <br>
+                <a :style="{ color : mode=='remote' ? '': '#333333'}" href="javascript:" title="To Posts"
+                   @click.prevent="mode='remote';page=1">Posts</a>
+                /
+                <a :style="{ color : mode=='album' ? '': '#333333'}" href="javascript:" title="To Album"
+                   @click.prevent="mode='album';page=1">Album</a>
             </h1>
+
+            <br>
             <small>
-                <select class="page-limits">
+                <select v-model="pageSize">
                     <option value="100">100p</option>
-                    </option>
+                    <option value="200">200p</option>
+                    <option value="300">300p</option>
+                    <option value="400">400p</option>
                     <option value="500">500p</option>
                 </select>
-                <a class="prev_page" rel="prev" href="javascript:;">← Prev</a>
-                <a class="next_page" rel="next" href="javascript:;">Next →</a>
+                <select v-model="orderBy">
+                    <option value="my_score">tfidf+Score</option>
+                    <option value="tf_idf">tfidf</option>
+                    <option value="score">Score</option>
+                    <option value="id">id</option>
+                </select>
+            </small>
+
+            <span v-if="query!=''" class="tag label label-primary">{{query}}
+                <span data-role="remove" @click="query=''"></span>
+            </span>
+
+            <small style="float: right">
+                <a @click.prevent="if(page >1)page-=1" href="javascript:">← Prev</a>
+                <a @click.prevent="page+=1" href="javascript:">Next →</a>
             </small>
 
             <!-- Galley wrapper that contains all items -->
-            <div id="gallery" class="gallery" itemscope itemtype="http://schema.org/ImageGallery">
-
-
-            </div>
-
+            <transition-group tag="div" class="gallery">
+                <figure class="card" v-for="(item, index) in slides" :key="item.id" @click.prevent="goTo(index)">
+                    <a :href="item.src" :data-caption="item.tags" :data-width="item.w" :data-height="item.h">
+                        <img :src="item.msrc" :alt="item.tags"
+                             :style="{ opacity : mode=='remote' && item.fav ? '0.1': ''}">
+                    </a>
+                    <figcaption ref="figcaption" style="display:none;">
+                        <h4 class="all-copy">
+                            <a :href="'https://konachan.com/post/show/'+item.id" target="_blank">
+                                {{item.id}}
+                            </a> -
+                            <a v-for="(tag, index) in item.tags.split(' ')" href="javascript:"
+                               :onclick="'setQuery(`' + tag + '`)'">
+                                {{tag}}
+                            </a>
+                        </h4>
+                        <p>
+                            tfidf+Score：{{item.my_score.toFixed(4)}} /
+                            tfidf：{{item.tf_idf.toFixed(4)}} /
+                            Score：{{item.score}} /
+                            Disp: {{item.width}}x{{item.height}} /
+                            Size: {{item.size}} /
+                            Rate: {{item.rating}}
+                        </p>
+                        <p>
+                            <a v-if="!item.fav" href="javascript:" :onclick="'down(`' + item.id + '`)'">Download</a>
+                            <a v-if="item.fav" href="javascript:" :onclick="'del(`' + item.id + '`)'">Delete</a>
+                        </p>
+                    </figcaption>
+                </figure>
+            </transition-group>
         </div>
     </div>
 </div>
 
 <!-- Some spacing 😉 -->
 <div class="spacer"></div>
-
 
 <!-- Root element of PhotoSwipe. Must have class pswp. -->
 <div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
@@ -162,178 +225,129 @@
 </div>
 
 <!-- Import jQuery and PhotoSwipe Scripts -->
-<script src="/web/static/jquery-2.1.1.min.js"></script>
 <script src="/web/static/photoswipe.min.js"></script>
 <script src="/web/static/photoswipe-ui-default.min.js"></script>
 
+<script src="/web/static/axios.min.js"></script>
+<script src="/web/static/vue.min.js"></script>
+
 <script>
-    'use strict';
-
-    /* global jQuery, PhotoSwipe, PhotoSwipeUI_Default, console */
-
-
-    (function ($) {
-
-        var getUrlParameter = function getUrlParameter(sParam) {
-            var sPageURL = window.location.search.substring(1),
-                sURLVariables = sPageURL.split('&'),
-                sParameterName,
-                i;
-
-            for (i = 0; i < sURLVariables.length; i++) {
-                sParameterName = sURLVariables[i].split('=');
-
-                if (sParameterName[0] === sParam) {
-                    return sParameterName[1] === undefined ? true : decodeURIComponent(sParameterName[1]);
+    var app = new Vue(
+        {
+            el: '#app',
+            data: {
+                pageSize: 100,
+                page: 1,
+                query: "",
+                slides: [],
+                mode: "remote",
+                orderBy: "my_score",
+                pswp: PhotoSwipe,
+            },
+            watch: {
+                params: function () {
+                    this.updateSlides()
+                },
+                orderBy: function () {
+                    let v = this.orderBy
+                    this.slides.sort((a, b) => (a[v] < b[v]) ? 1 : ((b[v] < a[v]) ? -1 : 0));
                 }
-            }
-        };
-
-        // Init empty gallery array
-        var container = [];
-
-        // Loop over gallery items and push it to the array
-        // $('h1').click(function (event) {
-        let page = 1;
-        if (getUrlParameter("page") != null) {
-            page = getUrlParameter("page")
-        }
-        let limit = 100;
-        if (getUrlParameter("limit") != null) {
-            limit = getUrlParameter("limit")
-            $(".page-limits").val(limit)
-        }
-        let url = `/remote/${limit}/${page}/`;
-
-
-        let tag = "";
-        if (getUrlParameter("tag") != null) {
-            tag = getUrlParameter("tag")
-            url += tag;
-            if (tag.length > 0) {
-                $('h1').text(tag);
-            }
-        }
-
-        function add2Tags(tag) {
-            return `<a href="?page=1&tag=${encodeURIComponent(tag)}" target="_blank">${tag}</a>`;
-        }
-
-        $.getJSON(url, function (data) {
-            $('#posts-h1').html("Posts (" + data.meta.fav + "/" + data.meta.total + ")");
-
-            $.each(data.data, function (i, item) {
-                let ddaystrs = item.tags.split(" ");
-
-                let title = `<h4 class="all-copy">
-<a href="https://konachan.com/post/show/${item.id}" target="_blank">${item.id}</a> - ${ddaystrs.map(add2Tags).join(" ")}
-</h4><p>tfidf+Score：${parseFloat(item.my_score).toFixed(4)} / tfidf：${parseFloat(item.tf_idf).toFixed(4)}
-/ Score：${item.score} / Disp: ${item.width}x${item.height} / Size: ${item.size} / Rate: ${item.rating}</p>
-<a href="/download/${item.id}" target="_blank">Download</a></p>`;
-                if (item.is_fav) {
-                    title += `<a href="/delete/${item.id}" target="_blank">Delete</a>`;
+            },
+            computed: {
+                params: function () {
+                    let params = ['', this.mode, this.pageSize, this.page, this.query];
+                    return params.join("/")
                 }
-                let slideItem = {
-                    msrc: item.preview_url,
-                    src: item.sample_url,
-                    w: item.sample_width,
-                    h: item.sample_height,
-                    title: title
-                };
-                container.push(slideItem);
-                let figureHtml = "";
-                if (item.is_fav) {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
-<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description" style="opacity:0.1"></a></figure>`
-                } else {
-                    figureHtml = `<figure itemprop="associatedMedia" itemscope itemtype="http://schema.org/ImageObject">
-<a href="${slideItem.src}" data-caption="" data-width="${slideItem.w}" data-height="${slideItem.h}" itemprop="contentUrl">
-<img src="${slideItem.msrc}" itemprop="thumbnail" alt="Image description"></a></figure>`
-                }
-                $("#gallery").append(figureHtml);
-            });
-
-            // Define click event on gallery item
-            $('.gallery a').click(function (event) {
-
-                // Prevent location change
-                event.preventDefault();
-
-                // Define object and gallery options
-                var $pswp = $('.pswp')[0],
-                    options = {
-                        index: $(this).parent('figure').index(),
+            },
+            methods: {
+                goTo: function (index) {
+                    let $pswp = document.querySelectorAll('.pswp')[0];
+                    let options = {
+                        index: index,
                         bgOpacity: 0.85,
                         showHideOpacity: true,
                         closeOnScroll: false,
-                        shareButtons: [
-                            {id: 'download', label: 'Download image', url: '{{raw_image_url}}', download: true}
-                        ],
-
+                        shareEl: false,
+                        getThumbBoundsFn: function (index) {
+                            var thumbnail = document.querySelectorAll('.card')[index];
+                            var pageYScroll = window.pageYOffset || document.documentElement.scrollTop;
+                            var rect = thumbnail.getBoundingClientRect();
+                            return {x: rect.left, y: rect.top + pageYScroll, w: rect.width};
+                        }
                     };
+                    this.pswp = new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, options);
+                    this.pswp.init()
+                },
+                updateSlides: function () {
+                    this.slides = [];
 
-                // Initialize PhotoSwipe
-                var gallery = new PhotoSwipe($pswp, PhotoSwipeUI_Default, container, options);
-                gallery.init();
-            });
+                    axios.get(this.params)
+                        .then((response) => {
+                            // console.log(response);
+                            response.data.data.forEach((item) => {
+                                let slideItem = {
+                                    msrc: this.mode == "remote" ? item.preview_url : `/preview/${item.id}`,
+                                    src: this.mode == "remote" ? item.sample_url : `/sample/${item.id}`,
+                                    w: item.sample_width,
+                                    width: item.width,
+                                    h: item.sample_height,
+                                    height: item.height,
+                                    title: "",
+                                    tags: item.tags,
+                                    fav: item.is_fav,
+                                    id: item.id,
+                                    my_score: item.my_score,
+                                    score: item.score,
+                                    tf_idf: item.tf_idf,
+                                    rating: item.rating,
+                                    size: item.size,
+                                };
+                                this.slides.push(slideItem);
+                            });
+                        })
+                        .finally(() => {
+                            this.slides.forEach((item, index) => {
+                                item.title = this.$refs.figcaption[index].innerHTML
+                            });
+                            let v = this.orderBy
+                            this.slides.sort((a, b) => (a[v] < b[v]) ? 1 : ((b[v] < a[v]) ? -1 : 0));
+                        })
+                        .catch(function (error) {
+                            console.log(error);
+                        });
+                }
+            },
+            mounted() {
+                this.updateSlides()
+            }
+        }
+    );
+
+    function setQuery(tag) {
+        app.pswp.close();
+        app.page = 1;
+        app.pageSize = 100;
+        app.query = encodeURIComponent(tag);
+    }
+
+    function down(id) {
+        app.pswp.close();
+        axios.get("/download/" + id).finally(() => {
+            app.updateSlides()
+        }).catch(function (error) {
+            console.log(error);
         });
+    }
 
-        $('.next_page').click(function (event) {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
-            }
-            page++;
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-
-            let limit = $(".page-limits").val();
-
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
+    function del(id) {
+        app.pswp.close();
+        axios.get("/delete/" + id).finally(() => {
+            app.updateSlides()
+        }).catch(function (error) {
+            console.log(error);
         });
-
-        $('.prev_page').click(function (event) {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
-            }
-            if (page > 1) {
-                page--
-            }
-
-            let limit = $(".page-limits").val();
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
-        });
-
-        $(".page-limits").change(function () {
-            let l = window.location.href.split('?')[0]
-            let page = 1;
-            if (getUrlParameter("page") != null) {
-                page = parseInt(getUrlParameter("page"));
-            }
-
-            let limit = $(".page-limits").val();
-
-            let tag = "";
-            if (getUrlParameter("tag") != null) {
-                tag = getUrlParameter("tag");
-            }
-
-            window.location.href = l + `?page=${page}&limit=${limit}&tag=${tag}`;
-        });
-
-    }(jQuery));
+    }
 </script>
+
 </body>
 </html>
