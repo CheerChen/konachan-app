@@ -3,6 +3,7 @@ package kfile
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -12,8 +13,8 @@ import (
 )
 
 func (pic *KFile) BuildName() {
-	pic.Tags = strings.Replace(pic.Tags, "/", "_", -1)
-	pic.Tags = strings.Replace(pic.Tags, ":", "_", -1)
+	var re = regexp.MustCompile(`[\\/:*?""<>|]`)
+	pic.Tags = re.ReplaceAllString(pic.Tags, `$1`)
 	pic.Name = fmt.Sprintf("Konachan.com - %d %s%s", pic.Id, pic.Tags, pic.Ext)
 }
 
