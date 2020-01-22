@@ -1,7 +1,6 @@
 package models
 
 import (
-	"math"
 	"strings"
 
 	"github.com/CheerChen/konachan-app/internal/humanize"
@@ -13,18 +12,28 @@ func (p *Post) Mark(tfIdf, avgMap map[string]float64) {
 	// 相似度打分
 	tags := strings.Split(p.Tags, " ")
 
-	var tfIdfSum float64
-	if len(tags) > 2 {
-		for _, tag := range tags {
-			if _, ok := tfIdf[tag]; ok {
-				tfIdfSum = tfIdfSum + tfIdf[tag]
-			}
-		}
-	}
-	p.TfIDf = tfIdfSum / float64(len(tags))
+	//var tfIdfSum float64
+	//if len(tags) > 2 {
+	//	for _, tag := range tags {
+	//		if _, ok := tfIdf[tag]; ok {
+	//			tfIdfSum = tfIdfSum + tfIdf[tag]
+	//		}
+	//	}
+	//}
+	//p.TfIDf = tfIdfSum / float64(len(tags))
 
 	//p.MyScore = (tfIdfSum + float64(p.Score)/avgMap[p.Rating]) / float64(len(tags)+1)
-	p.MyScore = (tfIdfSum + math.Log(float64(p.Score+1)/avgMap[p.Rating])) / float64(len(tags)+1)
+	//p.MyScore = (tfIdfSum + math.Log(float64(p.Score+1)/avgMap[p.Rating])) / float64(len(tags)+1)
+	for _, t := range tfIdf {
+		p.MyScore += t
+	}
+	for _, tag := range tags {
+		if t, ok := tfIdf[tag]; ok {
+			p.TfIDf += t
+		}
+	}
+	p.Score = float64(p.Score) / avgMap[p.Rating]
+	p.MyScore = p.TfIDf + p.Score
 
 	_ = p.SortTagsByTfIdf(tfIdf)
 
@@ -41,7 +50,7 @@ func (ps *Posts) Mark(tfIdf map[string]float64) error {
 
 	// 根据分级打平均分
 	avgMap := make(map[string]float64)
-	sumMap := make(map[string]int)
+	sumMap := make(map[string]float64)
 	lenMap := make(map[string]int)
 	for _, post := range *ps {
 		if _, ok := sumMap[post.Rating]; !ok {

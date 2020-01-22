@@ -14,7 +14,7 @@ const (
 	PostLimit        = 100
 	PostByTagUrl     = "https://konachan.net/post.json?tags=id:%d"
 	PostByTagNameUrl = "https://konachan.net/post.json?tags=%s&limit=%d&page=%d"
-	TagLimit         = 10000
+	TagLimit         = 15000
 	TagUrl           = "https://konachan.net/tag.json?order=count&limit=%d"
 )
 
@@ -93,6 +93,39 @@ func GetRemoteTags() (ts Tags) {
 		log.Errorf("json Unmarshal: %s", err)
 	}
 
+	return
+}
+
+func GetLastId() (id int64) {
+	req, _ := http.NewRequest("GET", PostByTagNameUrl, nil)
+	req.Header.Add("Accept", "application/json")
+	q := req.URL.Query()
+	q.Add("tags", fmt.Sprintf("%s", ""))
+	q.Add("limit", fmt.Sprintf("%d", 1))
+	q.Add("page", fmt.Sprintf("%d", 1))
+	req.URL.RawQuery = q.Encode()
+
+	url := req.URL.String()
+	var ps Posts
+	getBytes := cc.Get(url)
+	if getBytes == nil {
+		body, err := proxyGet(url)
+		if err != nil {
+			log.Errorf("http get: %s", err)
+			return
+		}
+		getBytes = body
+		cc.Set(url, body)
+	}
+
+	err := json.Unmarshal(getBytes, &ps)
+	if err != nil {
+		log.Errorf("json Unmarshal: %s", err)
+	}
+
+	if len(ps) > 0 {
+		id = ps[0].ID
+	}
 	return
 }
 

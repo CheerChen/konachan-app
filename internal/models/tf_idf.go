@@ -10,10 +10,9 @@ import (
 func GetTfIdf() map[string]float64 {
 	tags := GetRemoteTags()
 	tagMap := make(map[string]int)
-	tagSum := 0
+	picSum := GetLastId()
 	for _, tag := range tags {
 		tagMap[tag.Name] = tag.Count
-		tagSum = tagSum + tag.Count
 	}
 
 	pts, err := (&Posts{}).FetchAllTags()
@@ -48,15 +47,10 @@ func GetTfIdf() map[string]float64 {
 		if _, ok := tagMap[tag]; !ok {
 			tagMap[tag] = 1
 		}
-		idf := math.Log(float64(tagSum) / (float64(tagMap[tag] + 1)))
+		idf := math.Log(float64(picSum) / (float64(tagMap[tag] + 1)))
 		tf := float64(tf1) / float64(tf2[tag])
 		tfIdf[tag] = tf * idf
 	}
-
-	// 降权
-	//tfIdf["nobody"] = 0.0
-	//tfIdf["all_male"] = 0.0
-
 	log.Infof("available tags: %d", len(tfIdf))
 
 	return tfIdf
