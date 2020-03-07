@@ -1,47 +1,104 @@
 package log
 
-var (
-	DefaultLogger Logger
+import (
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+	"time"
 )
 
-type Logger interface {
-	Debugf(format string, v ...interface{})
-	Infof(format string, v ...interface{})
-	Warnf(format string, v ...interface{})
-	Errorf(format string, v ...interface{})
-	Fatalf(format string, v ...interface{})
+var (
+	errorLogger *zap.SugaredLogger
+	atom zap.AtomicLevel
+)
+
+func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
 }
 
-func SetLogger(l Logger) {
-	DefaultLogger = l
-}
+func init() {
+	atom = zap.NewAtomicLevel()
+	syncWriter := os.Stdout
 
-func Debugf(format string, v ...interface{}) {
-	if DefaultLogger != nil {
-		DefaultLogger.Debugf(format, v...)
+	encoderConfig := zapcore.EncoderConfig{
+		TimeKey:        "T",
+		LevelKey:       "L",
+		NameKey:        "N",
+		CallerKey:      "C",
+		MessageKey:     "M",
+		StacktraceKey:  "S",
+		LineEnding:     zapcore.DefaultLineEnding,
+		EncodeLevel:    zapcore.CapitalLevelEncoder,
+		EncodeTime:     TimeEncoder,
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
+
+	core := zapcore.NewCore(
+		zapcore.NewConsoleEncoder(encoderConfig),
+		syncWriter,
+		atom,
+	)
+	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	errorLogger = logger.Sugar()
 }
 
-func Infof(format string, v ...interface{}) {
-	if DefaultLogger != nil {
-		DefaultLogger.Infof(format, v...)
-	}
+func SetLogLevel(level zapcore.Level) {
+	atom.SetLevel(level)
 }
 
-func Warnf(format string, v ...interface{}) {
-	if DefaultLogger != nil {
-		DefaultLogger.Warnf(format, v...)
-	}
+func Debug(args ...interface{}) {
+	errorLogger.Debug(args...)
 }
 
-func Errorf(format string, v ...interface{}) {
-	if DefaultLogger != nil {
-		DefaultLogger.Errorf(format, v...)
-	}
+func Debugf(template string, args ...interface{}) {
+	errorLogger.Debugf(template, args...)
 }
 
-func Fatalf(format string, v ...interface{}) {
-	if DefaultLogger != nil {
-		DefaultLogger.Fatalf(format, v...)
-	}
+func Info(args ...interface{}) {
+	errorLogger.Info(args...)
+}
+
+func Infof(template string, args ...interface{}) {
+	errorLogger.Infof(template, args...)
+}
+
+func Warn(args ...interface{}) {
+	errorLogger.Warn(args...)
+}
+
+func Warnf(template string, args ...interface{}) {
+	errorLogger.Warnf(template, args...)
+}
+
+func Error(args ...interface{}) {
+	errorLogger.Error(args...)
+}
+
+func Errorf(template string, args ...interface{}) {
+	errorLogger.Errorf(template, args...)
+}
+
+func DPanic(args ...interface{}) {
+	errorLogger.DPanic(args...)
+}
+
+func DPanicf(template string, args ...interface{}) {
+	errorLogger.DPanicf(template, args...)
+}
+
+func Panic(args ...interface{}) {
+	errorLogger.Panic(args...)
+}
+
+func Panicf(template string, args ...interface{}) {
+	errorLogger.Panicf(template, args...)
+}
+
+func Fatal(args ...interface{}) {
+	errorLogger.Fatal(args...)
+}
+
+func Fatalf(template string, args ...interface{}) {
+	errorLogger.Fatalf(template, args...)
 }

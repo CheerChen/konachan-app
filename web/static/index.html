@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/web/static/photoswipe.css">
     <link rel="stylesheet" href="/web/static/default-skin/default-skin.css">
 
+    <link href="/web/static/vue-loading.css" rel="stylesheet">
     <link rel="shortcut icon" href="/web/static/favicon.ico"/>
     <link rel="bookmark" href="/web/static/favicon.ico"/>
     <!-- A touch of fanciness 💄 -->
@@ -105,10 +106,10 @@
 
             <h1 class="text-center">
                 <a :style="{ color : mode=='remote' ? '': '#333333'}" href="javascript:" title="To Posts"
-                   @click.prevent="mode='remote';page=1">Posts</a>
+                   @click.prevent="mode='remote';pageWhat(1)">Posts</a>
                 /
                 <a :style="{ color : mode=='album' ? '': '#333333'}" href="javascript:" title="To Album"
-                   @click.prevent="mode='album';page=1">Album</a>
+                   @click.prevent="mode='album';pageWhat(1)">Album</a>
             </h1>
 
             <br>
@@ -125,6 +126,7 @@
                     <option value="tf_idf">tfidf</option>
                     <option value="score">Score</option>
                     <option value="id">id</option>
+                    <option value="file_size">filesize</option>
                 </select>
             </small>
 
@@ -133,8 +135,8 @@
             </span>
 
             <small style="float: right">
-                <a @click.prevent="if(page >1)page-=1" href="javascript:">← Prev</a>
-                <a @click.prevent="page+=1" href="javascript:">Next →</a>
+                <a @click.prevent="pageWhat(page - (pageSize/100))" href="javascript:">← Prev</a>
+                <a @click.prevent="pageWhat(page + (pageSize/100))" href="javascript:">Next →</a>
             </small>
 
             <!-- Galley wrapper that contains all items -->
@@ -159,12 +161,13 @@
                             tfidf：{{item.tf_idf.toFixed(4)}} /
                             Score：{{item.score}} /
                             Disp: {{item.width}}x{{item.height}} /
-                            Size: {{item.size}} /
+                            Size: {{formatBytes(item.file_size)}} /
                             Rate: {{item.rating}}
                         </p>
                         <p>
                             <a v-if="!item.fav" href="javascript:" :onclick="'down(`' + item.id + '`)'">Download</a>
                             <a v-if="item.fav" href="javascript:" :onclick="'del(`' + item.id + '`)'">Delete</a>
+                            <a v-if="item.fav" href="javascript:" :onclick="'down(`' + item.id + '`)'">re-Download</a>
                         </p>
                     </figcaption>
                 </figure>
@@ -231,7 +234,12 @@
 <script src="/web/static/axios.min.js"></script>
 <script src="/web/static/vue.min.js"></script>
 
+<script src="/web/static/vue-loading-overlay@3.js"></script>
+
 <script>
+    Vue.use(VueLoading);
+    Vue.component('loading', VueLoading)
+
     var app = new Vue(
         {
             el: '#app',
@@ -243,6 +251,7 @@
                 mode: "remote",
                 orderBy: "my_score",
                 pswp: PhotoSwipe,
+                cancelSource: null,
             },
             watch: {
                 params: function () {
@@ -260,13 +269,18 @@
                 }
             },
             methods: {
+                pageWhat: function (p) {
+                    if (p >= 1 && this.page !== p) {
+                        this.page = p
+                    }
+                },
                 goTo: function (index) {
                     let $pswp = document.querySelectorAll('.pswp')[0];
                     let options = {
                         index: index,
                         bgOpacity: 0.85,
                         showHideOpacity: true,
-                        closeOnScroll: false,
+                        closeOnScroll: true,
                         shareEl: false,
                         getThumbBoundsFn: function (index) {
                             var thumbnail = document.querySelectorAll('.card')[index];
@@ -279,12 +293,24 @@
                     this.pswp.init()
                 },
                 updateSlides: function () {
-                    this.slides = [];
+                    let loader = this.$loading.show({
+                        container: null,
+                        canCancel: false,
+                    });
 
-                    axios.get(this.params)
+                    this.slides = [];
+                    if (this.cancelSource != null) {
+                        this.cancelSource.cancel()
+                    }
+                    this.cancelSource = axios.CancelToken.source()
+                    axios.get(this.params, {
+                        cancelToken: this.cancelSource.token
+                    })
                         .then((response) => {
                             // console.log(response);
                             response.data.data.forEach((item) => {
+                                // item.preview_url = item.preview_url.replace("https", "http")
+                                // item.sample_url = item.sample_url.replace("https", "http")
                                 let slideItem = {
                                     msrc: this.mode == "remote" ? item.preview_url : `/preview/${item.id}`,
                                     src: this.mode == "remote" ? item.sample_url : `/sample/${item.id}`,
@@ -301,16 +327,19 @@
                                     tf_idf: item.tf_idf,
                                     rating: item.rating,
                                     size: item.size,
+                                    file_size: item.file_size,
                                 };
                                 this.slides.push(slideItem);
                             });
                         })
                         .finally(() => {
+                            this.cancelSource = null;
                             this.slides.forEach((item, index) => {
                                 item.title = this.$refs.figcaption[index].innerHTML
                             });
                             let v = this.orderBy
                             this.slides.sort((a, b) => (a[v] < b[v]) ? 1 : ((b[v] < a[v]) ? -1 : 0));
+                            loader.hide()
                         })
                         .catch(function (error) {
                             console.log(error);
@@ -332,7 +361,12 @@
 
     function down(id) {
         app.pswp.close();
+        let loader = app.$loading.show({
+            container: null,
+            canCancel: false,
+        });
         axios.get("/download/" + id).finally(() => {
+            loader.hide()
             app.updateSlides()
         }).catch(function (error) {
             console.log(error);
@@ -341,11 +375,23 @@
 
     function del(id) {
         app.pswp.close();
+        let loader = app.$loading.show({
+            container: null,
+            canCancel: false,
+        });
         axios.get("/delete/" + id).finally(() => {
+            loader.hide()
             app.updateSlides()
         }).catch(function (error) {
             console.log(error);
         });
+    }
+
+    function formatBytes(a, b) {
+        if (0 == a) return "0 Bytes";
+        let c = 1024, d = b || 2, e = ["Bytes", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"],
+            f = Math.floor(Math.log(a) / Math.log(c));
+        return parseFloat((a / Math.pow(c, f)).toFixed(d)) + " " + e[f]
     }
 </script>
 

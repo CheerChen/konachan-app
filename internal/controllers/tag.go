@@ -9,6 +9,7 @@ import (
 )
 
 func GetTfIdf(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	cJson(w, models.GetTfIdf(), nil)
+	tfIdf, _ := models.GetTfIdf()
+	cJson(w, tfIdf, nil)
 	return
 }

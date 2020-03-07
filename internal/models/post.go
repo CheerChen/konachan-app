@@ -7,54 +7,17 @@ import (
 	"strings"
 
 	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 
 	"github.com/boltdb/bolt"
 )
 
 type Post struct {
-	ID                  int64       `json:"id"`
-	Tags                string      `json:"tags"`
-	CreatedAt           int         `json:"created_at"`
-	CreatorID           int         `json:"creator_id"`
-	Author              string      `json:"author"`
-	Change              int         `json:"change"`
-	Source              string      `json:"source"`
-	Score               int         `json:"score"`
-	Md5                 string      `json:"md5"`
-	FileSize            int64       `json:"file_size"`
-	FileURL             string      `json:"file_url"`
-	IsShownInIndex      bool        `json:"is_shown_in_index"`
-	PreviewURL          string      `json:"preview_url"`
-	PreviewWidth        int         `json:"preview_width"`
-	PreviewHeight       int         `json:"preview_height"`
-	ActualPreviewWidth  int         `json:"actual_preview_width"`
-	ActualPreviewHeight int         `json:"actual_preview_height"`
-	SampleURL           string      `json:"sample_url"`
-	SampleWidth         int         `json:"sample_width"`
-	SampleHeight        int         `json:"sample_height"`
-	SampleFileSize      int         `json:"sample_file_size"`
-	JpegURL             string      `json:"jpeg_url"`
-	JpegWidth           int         `json:"jpeg_width"`
-	JpegHeight          int         `json:"jpeg_height"`
-	JpegFileSize        int         `json:"jpeg_file_size"`
-	Rating              string      `json:"rating"  db:"rating"`
-	HasChildren         bool        `json:"has_children"`
-	ParentID            interface{} `json:"parent_id" gorm:"-"`
-	Status              string      `json:"status"`
-	Width               int         `json:"width"`
-	Height              int         `json:"height"`
-	//IsHeld              bool          `json:"is_held"`
-	//FramesPendingString string        `json:"frames_pending_string"`
-	//FramesPending       []interface{} `json:"frames_pending"`
-	//FramesString        string        `json:"frames_string"`
-	//Frames              []interface{} `json:"frames"`
-	//FlagDetail          interface{}   `json:"flag_detail"`
+	*konachan.Post
 
-	// 非官方字段
 	TfIDf   float64 `json:"tf_idf"`
 	MyScore float64 `json:"my_score"`
 	IsFav   bool    `json:"is_fav"`
-	Size    string  `json:"size"`
 }
 
 type Posts []Post
@@ -149,7 +112,7 @@ func (ps *Posts) FetchAll(tag string, l, page int) (err error) {
 		return (*ps)[i].ID > (*ps)[j].ID
 	})
 
-	min, max, start, end := 0, len(*ps), (page-1)*l, page*l
+	min, max, start, end := 0, len(*ps), (page-1)*100, (page-1)*100+l
 
 	if start < min {
 		start = min
@@ -193,7 +156,7 @@ func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
 		if _, ok := tfIdf[tag]; !ok {
 			tfIdf[tag] = 0.0
 		}
-		tags = append(tags, Tag{Name: tag, TfIdf: tfIdf[tag]})
+		tags = append(tags, Tag{Tag: &konachan.Tag{Name: tag}, TfIdf: tfIdf[tag]})
 	}
 
 	sort.Slice(tags, func(i, j int) bool {

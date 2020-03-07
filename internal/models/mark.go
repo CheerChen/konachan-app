@@ -4,50 +4,74 @@ import (
 	"math"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/humanize"
 	"github.com/CheerChen/konachan-app/internal/log"
 )
 
 // Mark
-func (p *Post) Mark(tfIdf, avgMap map[string]float64) {
-	// 相似度打分
-	tags := strings.Split(p.Tags, " ")
-
-	var tfIdfSum float64
-	if len(tags) > 2 {
-		for _, tag := range tags {
-			if _, ok := tfIdf[tag]; ok {
-				tfIdfSum = tfIdfSum + tfIdf[tag]
-			}
-		}
+func (ps *Posts) Mark(tfIdf, idf map[string]float64) error {
+	avgMap := ps.AvgMap()
+	for k := range *ps {
+		(*ps)[k].Mark(tfIdf, idf, avgMap)
 	}
-	p.TfIDf = tfIdfSum / float64(len(tags))
 
-	//p.MyScore = (tfIdfSum + float64(p.Score)/avgMap[p.Rating]) / float64(len(tags)+1)
-	p.MyScore = (tfIdfSum + math.Log(float64(p.Score+1)/avgMap[p.Rating])) / float64(len(tags)+1)
-
-	_ = p.SortTagsByTfIdf(tfIdf)
-
-	p.Size = humanize.Bytes(uint64(p.FileSize))
+	return nil
 }
 
-// Mark
-func (ps *Posts) Mark(tfIdf map[string]float64) error {
+// 相似度打分
+func (p *Post) Mark(tfIdf, idf, avgMap map[string]float64) {
+	tags := strings.Split(p.Tags, " ")
+
+	// version 1
+	//var tfIdfSum float64
+	//if len(tags) > 2 {
+	//	for _, tag := range tags {
+	//		if _, ok := tfIdf[tag]; ok {
+	//			tfIdfSum = tfIdfSum + tfIdf[tag]
+	//		}
+	//	}
+	//}
+	//p.TfIDf = tfIdfSum / float64(len(tags))
+
+	//p.MyScore = (tfIdfSum + float64(p.Score)/avgMap[p.Rating]) / float64(len(tags)+1)
+	//p.MyScore = (tfIdfSum + math.Log(float64(p.Score+1)/avgMap[p.Rating])) / float64(len(tags)+1)
+
+	// version 2
+	for _, tag := range tags {
+		if t, ok := tfIdf[tag]; ok {
+			p.TfIDf += t
+		}
+	}
+	p.TfIDf = p.TfIDf / float64(len(tags))
+	p.MyScore = p.TfIDf + math.Log(float64(p.Score+1)/avgMap[p.Rating])/float64(len(tags))
+
+	_ = p.SortTagsByTfIdf(tfIdf)
+}
+
+func (ps *Posts) MarkExist() error {
 	idMap, err := (*ps).FetchAllId()
 	if err != nil {
 		log.Errorf("fetch all post id: %s", err)
 		return err
 	}
+	for k := range *ps {
+		if _, ok := idMap[(*ps)[k].ID]; ok {
+			(*ps)[k].IsFav = true
+		}
+	}
 
-	// 根据分级打平均分
+	return nil
+}
+
+// 根据分级打平均分
+func (ps *Posts) AvgMap() map[string]float64 {
 	avgMap := make(map[string]float64)
-	sumMap := make(map[string]int)
+	sumMap := make(map[string]float64)
 	lenMap := make(map[string]int)
 	for _, post := range *ps {
 		if _, ok := sumMap[post.Rating]; !ok {
-			sumMap[post.Rating] = post.Score
+			sumMap[post.Rating] = float64(post.Score)
 		} else {
-			sumMap[post.Rating] += post.Score
+			sumMap[post.Rating] += float64(post.Score)
 		}
 
 		if _, ok := lenMap[post.Rating]; !ok {
@@ -62,18 +86,7 @@ func (ps *Posts) Mark(tfIdf map[string]float64) error {
 			avgMap[ranting] = float64(sum) / float64(l)
 		}
 	}
+	log.Infof("created avgMap: %v", avgMap)
 
-	log.Infof("create lenMap: %v", lenMap)
-	log.Infof("create avgMap: %v", avgMap)
-
-	for k := range *ps {
-
-		(*ps)[k].Mark(tfIdf, avgMap)
-
-		if _, ok := idMap[(*ps)[k].ID]; ok {
-			(*ps)[k].IsFav = idMap[(*ps)[k].ID]
-		}
-	}
-
-	return nil
+	return avgMap
 }
