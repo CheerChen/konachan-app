@@ -1,64 +1,66 @@
 package main
 
 import (
-	"bufio"
+	"context"
+	"crypto/tls"
 	"flag"
-	"fmt"
 	slog "log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"runtime"
-
-	"github.com/julienschmidt/httprouter"
-	"github.com/rs/cors"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 
 	"github.com/CheerChen/konachan-app/internal/asset"
 	"github.com/CheerChen/konachan-app/internal/controllers"
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
-)
 
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	bytes, err := asset.Asset("web/static/index.html")
-	if err != nil {
-		log.Errorf("", err)
-		http.NotFound(w, r)
-		return
-	}
-	w.Write(bytes)
-}
+	"github.com/julienschmidt/httprouter"
+	"github.com/rs/cors"
+	"golang.org/x/net/proxy"
+)
 
 var (
-	level = flag.Int("l", -1, "log level, -1:debug, 0:info, 1:warn, 2:error")
-	path  = flag.String("p", "path/to/wallpaper", "wallpaper path, input an absolute path")
+	scanPath string
+	proxyUrl string
 )
 
-func main() {
-
+func init() {
+	flag.StringVar(&scanPath, "p", "wallpaper", "wallpaper path, input an absolute path")
+	flag.StringVar(&proxyUrl, "proxy", "", "set proxy url")
 	flag.Parse()
+}
 
-	lcf := zap.NewDevelopmentConfig()
-	lcf.Level.SetLevel(zapcore.Level(*level))
-	lcf.Development = false
-	lcf.Sampling = nil
-	lcf.DisableStacktrace = true
-
-	logger, err := lcf.Build(zap.AddCallerSkip(1))
-	if err != nil {
-		slog.Fatalln("logger err:", err.Error())
+func main() {
+	if err := ensureDir(scanPath); err != nil {
+		log.Fatal(err)
 	}
-	log.SetLogger(logger.Sugar())
 
-	models.Init()
+	proxyClient := &http.Client{}
+	if proxyUrl != "" {
+		url, err := url.Parse(proxyUrl)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dialer, err := proxy.FromURL(url, proxy.Direct)
+		if err != nil {
+			log.Fatal(err)
+		}
+		proxyClient.Transport = &http.Transport{
+			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
+				c, e := dialer.Dial(network, addr)
+				return c, e
+			},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
 
-	if _, err := os.Stat(*path); err != nil {
-		*path = GetUserInput()
 	}
-	go kfile.Sync(*path)
+
+	models.SetClient(proxyClient)
+	kfile.Sync(scanPath)
 
 	router := httprouter.New()
 
@@ -81,25 +83,18 @@ func main() {
 
 	handler := cors.Default().Handler(router)
 
-	go Open("http://localhost:7079/")
+	go Open("http://127.0.0.1:7079/")
 	slog.Fatal(http.ListenAndServe(":7079", handler))
 }
 
-func GetUserInput() (input string) {
-	for {
-		consoleReader := bufio.NewReader(os.Stdin)
-		fmt.Print("Please input wallpaper path >")
-
-		line, _, _ := consoleReader.ReadLine()
-		if _, err := os.Stat(string(line)); err != nil {
-			log.Errorf("Wallpaper path err: %v", err)
-			continue
-		} else {
-			input = string(line)
-			break
-		}
+func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	bytes, err := asset.Asset("web/static/index.html")
+	if err != nil {
+		log.Errorf("", err)
+		http.NotFound(w, r)
+		return
 	}
-	return
+	w.Write(bytes)
 }
 
 func Open(url string) error {
@@ -117,4 +112,13 @@ func Open(url string) error {
 	}
 	args = append(args, url)
 	return exec.Command(cmd, args...).Start()
+}
+
+func ensureDir(dirName string) error {
+	err := os.Mkdir(dirName, os.ModeDir)
+	if err == nil || os.IsExist(err) {
+		return nil
+	} else {
+		return err
+	}
 }

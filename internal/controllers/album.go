@@ -26,9 +26,10 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 	}
+	query := GetQuery("tag", ps)
 
 	posts := models.Posts{}
-	err = posts.FetchAll(ps.ByName("tag")[1:], limit, page)
+	err = posts.FetchAll(query, limit, page)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -41,11 +42,12 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	tfIdf := models.GetTfIdf()
-	err = posts.Mark(tfIdf)
+	tfIdf, idf := models.GetTfIdf()
+	err = posts.Mark(tfIdf, idf)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	}
+	_ = posts.MarkExist()
 
 	cJson(w, posts, map[string]int{
 		"total": len(posts),

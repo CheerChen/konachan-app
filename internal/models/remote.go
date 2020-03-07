@@ -1,150 +1,88 @@
 package models
 
 import (
-	"crypto/tls"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-
 	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
-const (
-	PostLimit        = 100
-	PostByTagUrl     = "https://konachan.net/post.json?tags=id:%d"
-	PostByTagNameUrl = "https://konachan.net/post.json?tags=%s&limit=%d&page=%d"
-	TagLimit         = 15000
-	TagUrl           = "https://konachan.net/tag.json?order=count&limit=%d"
-)
+func Fetch(params *konachan.PostListParams) (posts Posts) {
+	kClient := konachan.NewClient(proxyClient)
+	key, _ := kClient.Posts.ListUrlEncode(params)
+	val, found := mem.Get(key)
 
-func GetRemotePosts(tags string, limit, page int) (ps Posts) {
-	if limit > PostLimit || limit < 1 {
-		limit = PostLimit
-	}
-	if page < 1 {
-		page = 1
-	}
-	req, _ := http.NewRequest("GET", PostByTagNameUrl, nil)
-	req.Header.Add("Accept", "application/json")
-	q := req.URL.Query()
-	q.Add("tags", fmt.Sprintf("%s", tags))
-	q.Add("limit", fmt.Sprintf("%d", limit))
-	q.Add("page", fmt.Sprintf("%d", page))
-	req.URL.RawQuery = q.Encode()
-
-	url := req.URL.String()
-	getBytes := cc.Get(url)
-	if getBytes == nil {
-		body, err := proxyGet(url)
+	if !found {
+		kPosts, _, err := kClient.Posts.List(params)
 		if err != nil {
-			log.Errorf("http get: %s", err)
+			log.Errorf("kClient.Posts.List: %s", err)
 			return
 		}
-		getBytes = body
-		cc.Set(url, body)
-	}
-
-	err := json.Unmarshal(getBytes, &ps)
-	if err != nil {
-		log.Errorf("json Unmarshal: %s", err)
+		for k := range kPosts {
+			posts = append(posts, Post{
+				Post: &kPosts[k],
+			})
+		}
+		mem.SetDefault(key, posts)
+	} else {
+		posts = val.(Posts)
 	}
 
 	return
 }
 
-func GetRemotePost(postId int64) (target Post, err error) {
-	url := fmt.Sprintf(PostByTagUrl, postId)
-	body, err := proxyGet(url)
-	if err != nil {
-		log.Errorf("http get: %s", err)
-		return
+func FetchId(id int64) (post Post, err error) {
+	params := &konachan.PostListParams{
+		Limit: 1,
+		Page:  1,
+		Tags:  fmt.Sprintf("id:%d", id),
 	}
-	var posts Posts
-	err = json.Unmarshal(body, &posts)
-	if err != nil {
-		log.Errorf("json Unmarshal: %s", err)
-		return
+	posts := Fetch(params)
+	if len(posts) > 0 {
+		return posts[0], nil
 	}
 
-	for _, post := range posts {
-		if post.ID == postId {
-			return post, nil
-		}
-	}
-	return target, ErrRecordNotFound
+	return post, ErrRecordNotFound
 }
 
-func GetRemoteTags() (ts Tags) {
-	url := fmt.Sprintf(TagUrl, TagLimit)
-	getBytes := cc.Get(url)
-	if getBytes == nil {
-		body, err := proxyGet(url)
+func GetRemoteTags() (tags Tags) {
+	params := &konachan.TagListParams{
+		Limit: 10000,
+		Order: "count",
+	}
+	kClient := konachan.NewClient(proxyClient)
+	key, _ := kClient.Tags.ListUrlEncode(params)
+	val, found := mem.Get(key)
+
+	if !found {
+		kTags, _, err := kClient.Tags.List(params)
 		if err != nil {
-			log.Errorf("http get: %s", err)
+			log.Errorf("kClient.Tags.List: %s", err)
 			return
 		}
-		getBytes = body
-		cc.Set(url, body)
-	}
 
-	err := json.Unmarshal(getBytes, &ts)
-	if err != nil {
-		log.Errorf("json Unmarshal: %s", err)
+		for k := range kTags {
+			tags = append(tags, Tag{
+				Tag: &kTags[k],
+			})
+		}
+		mem.SetDefault(key, tags)
+	} else {
+		tags = val.(Tags)
 	}
 
 	return
 }
 
-func GetLastId() (id int64) {
-	req, _ := http.NewRequest("GET", PostByTagNameUrl, nil)
-	req.Header.Add("Accept", "application/json")
-	q := req.URL.Query()
-	q.Add("tags", fmt.Sprintf("%s", ""))
-	q.Add("limit", fmt.Sprintf("%d", 1))
-	q.Add("page", fmt.Sprintf("%d", 1))
-	req.URL.RawQuery = q.Encode()
-
-	url := req.URL.String()
-	var ps Posts
-	getBytes := cc.Get(url)
-	if getBytes == nil {
-		body, err := proxyGet(url)
-		if err != nil {
-			log.Errorf("http get: %s", err)
-			return
-		}
-		getBytes = body
-		cc.Set(url, body)
+func FetchLastId() (id int64) {
+	params := &konachan.PostListParams{
+		Limit: 1,
+		Page:  1,
+		Tags:  "",
 	}
 
-	err := json.Unmarshal(getBytes, &ps)
-	if err != nil {
-		log.Errorf("json Unmarshal: %s", err)
-	}
-
-	if len(ps) > 0 {
-		id = ps[0].ID
+	posts := Fetch(params)
+	if len(posts) > 0 {
+		return posts[0].ID
 	}
 	return
-}
-
-func proxyGet(url string) (b []byte, err error) {
-	client := &http.Client{}
-	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080", nil, proxy.Direct)
-
-	client.Transport = &http.Transport{
-		//DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
-		//	c, e := dialer.Dial(network, addr)
-		//	return c, e
-		//},
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
-	log.Infof("fetch url %s", url)
-	resp, err := client.Get(url)
-	if err != nil {
-		return b, err
-	}
-	defer resp.Body.Close()
-	return ioutil.ReadAll(resp.Body)
 }

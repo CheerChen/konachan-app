@@ -6,8 +6,6 @@ import (
 	"os"
 
 	"github.com/CheerChen/konachan-app/internal/log"
-
-	"github.com/CheerChen/konachan-app/internal/humanize"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
@@ -34,8 +32,8 @@ func Check() (diff map[int64]string) {
 		}
 
 		if width != post.Width || height != post.Height {
-			diff[post.ID] = fmt.Sprintf("pic size：%s \n", humanize.Bytes(uint64(pic.Size)))
-			diff[post.ID] += fmt.Sprintf("post size：%s \n", humanize.Bytes(uint64(post.FileSize)))
+			diff[post.ID] = fmt.Sprintf("pic size：%s \n", pic.Size)
+			diff[post.ID] += fmt.Sprintf("post size：%s \n", post.FileSize)
 			diff[post.ID] += fmt.Sprintf("pic：%d*%d \n", width, height)
 			diff[post.ID] += fmt.Sprintf("post：%d*%d \n", post.Width, post.Height)
 		}

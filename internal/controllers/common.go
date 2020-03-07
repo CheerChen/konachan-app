@@ -24,11 +24,15 @@ func GetPager(w http.ResponseWriter, ps httprouter.Params) (int, int, error) {
 		return 0, 0, err
 	}
 
-	if limit <= 0 || page <= 0 {
+	if limit > 500 || limit <= 0 || page <= 0 {
 		return 0, 0, errors.New(http.StatusText(http.StatusNotAcceptable))
 	}
 
 	return limit, page, nil
+}
+
+func GetQuery(name string, ps httprouter.Params) string {
+	return ps.ByName(name)[1:]
 }
 
 type JsonResponse struct {

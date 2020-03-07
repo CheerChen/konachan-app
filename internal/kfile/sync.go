@@ -35,7 +35,7 @@ func Sync(path string) {
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
 		go func() {
-			worker(idCh, resultCh)
+			fetchPost(idCh, resultCh)
 			wg.Done()
 		}()
 	}
@@ -56,7 +56,7 @@ func Sync(path string) {
 	return
 }
 
-func worker(ids <-chan int64, c chan<- models.Post) {
+func fetchPost(ids <-chan int64, c chan<- models.Post) {
 	for id := range ids {
 		var post models.Post
 		err := post.Find(id)
@@ -64,7 +64,7 @@ func worker(ids <-chan int64, c chan<- models.Post) {
 			log.Infof("find ID(%d) in db", post.ID)
 			continue
 		}
-		post, err = models.GetRemotePost(id)
+		post, err = models.FetchId(id)
 		if err != nil {
 			log.Warnf("fetch ID(%d) from web: %s", id, err.Error())
 			continue
