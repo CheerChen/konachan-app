@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"flag"
 	slog "log"
 	"net"
 	"net/http"
@@ -20,28 +19,48 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
+	"github.com/spf13/viper"
 	"golang.org/x/net/proxy"
 )
 
 var (
-	scanPath string
-	proxyUrl string
+	conf     Conf
 )
 
+type DownloadConf struct {
+	Path string
+}
+
+type ProxyConf struct {
+	Enable bool
+	Socket string
+}
+
+type Conf struct {
+	Download DownloadConf
+	Proxy    ProxyConf
+}
+
 func init() {
-	flag.StringVar(&scanPath, "p", "wallpaper", "wallpaper path, input an absolute path")
-	flag.StringVar(&proxyUrl, "proxy", "", "set proxy url")
-	flag.Parse()
+	viper.SetConfigName("config")
+	viper.AddConfigPath(".")
+	if err := viper.ReadInConfig(); err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
+	err := viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatalf("unable to decode into struct, %v", err)
+	}
 }
 
 func main() {
-	if err := ensureDir(scanPath); err != nil {
+	if err := ensureDir(conf.Download.Path); err != nil {
 		log.Fatal(err)
 	}
 
 	proxyClient := &http.Client{}
-	if proxyUrl != "" {
-		url, err := url.Parse(proxyUrl)
+	if conf.Proxy.Enable {
+		url, err := url.Parse(conf.Proxy.Socket)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -60,7 +79,7 @@ func main() {
 	}
 
 	models.SetClient(proxyClient)
-	kfile.Sync(scanPath)
+	kfile.Sync(conf.Download.Path)
 
 	router := httprouter.New()
 
