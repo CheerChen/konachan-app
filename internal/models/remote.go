@@ -14,30 +14,6 @@ import (
 	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
-//func Fetch(params *konachan.PostListParams) (posts Posts) {
-//	kClient := konachan.NewClient(proxyClient)
-//	key, _ := kClient.Posts.ListUrlEncode(params)
-//	val, found := mem.Get(key)
-//
-//	if !found {
-//		kPosts, _, err := kClient.Posts.List(params)
-//		if err != nil {
-//			log.Errorf("kClient.Posts.List: %s", err)
-//			return
-//		}
-//		for k := range kPosts {
-//			posts = append(posts, Post{
-//				Post: &kPosts[k],
-//			})
-//		}
-//		mem.SetDefault(key, posts)
-//	} else {
-//		posts = val.(Posts)
-//	}
-//
-//	return
-//}
-
 // grab 版本
 func BatchFetchPosts(query string, pagesize, page int) *Posts {
 	posts := make(Posts, 0)
@@ -104,24 +80,11 @@ func FetchPostByID(id int64) (post *Post, err error) {
 		Tags:  fmt.Sprintf("id:%d", id),
 	}
 	kClient := konachan.NewClient(proxyClient)
-	//key, _ := kClient.Posts.ListUrlEncode(params)
-	//val, found := mem.Get(key)
-
-	//if !found {
 	kPosts, _, err = kClient.Posts.List(params)
 	if err != nil {
 		log.Errorf("kClient.Posts.List: %s", err)
 		return
 	}
-	//for k := range kPosts {
-	//	posts = append(posts, Post{
-	//		Post: &kPosts[k],
-	//	})
-	//}
-	//	mem.SetDefault(key, posts)
-	//} else {
-	//	posts = val.(Posts)
-	//}
 	if len(kPosts) > 0 {
 		return &Post{Post: &kPosts[0]}, nil
 	}
@@ -158,33 +121,6 @@ func GetRemoteTags() (tags []*Tag) {
 		log.Warnf("Unmarshal err:", err)
 		return
 	}
-	return
-
-	//params := &konachan.TagListParams{
-	//	Limit: 10000,
-	//	Order: "count",
-	//}
-	//kClient := konachan.NewClient(proxyClient)
-	//key, _ := kClient.Tags.ListUrlEncode(params)
-	//val, found := mem.Get(key)
-	//
-	//if !found {
-	//	kTags, _, err := kClient.Tags.List(params)
-	//	if err != nil {
-	//		log.Errorf("kClient.Tags.List: %s", err)
-	//		return
-	//	}
-	//
-	//	for k := range kTags {
-	//		tags = append(tags, Tag{
-	//			Tag: &kTags[k],
-	//		})
-	//	}
-	//	mem.SetDefault(key, tags)
-	//} else {
-	//	tags = val.(Tags)
-	//}
-
 	return
 }
 
