@@ -2,87 +2,50 @@ package kfile
 
 import (
 	"fmt"
-	"os"
+	"github.com/CheerChen/konachan-app/internal/grabber"
+	"github.com/cavaliercoder/grab"
+	"path"
 	"regexp"
 	"strings"
-	"time"
-
-	"github.com/cavaliercoder/grab"
 
 	"github.com/CheerChen/konachan-app/internal/log"
 )
 
-func (pic *KFile) BuildName() {
-	var re = regexp.MustCompile(`[\\/:*?""<>|]`)
-	pic.Tags = re.ReplaceAllString(pic.Tags, `$1`)
-	pic.Name = fmt.Sprintf("Konachan.com - %d %s%s", pic.Id, pic.Tags, pic.Ext)
-}
-
 const FileNameLengthLimit = 200
 
-func (pic *KFile) SlimTags() {
-
+func (pic *KFile) BuildName(u string) {
+	// reduce tags
 	tags := strings.Split(pic.Tags, " ")
 
 	for len(pic.Tags) >= FileNameLengthLimit {
 		tags = tags[:len(tags)-1]
 		pic.Tags = strings.Join(tags, " ")
 	}
+
+	// replace special char
+	var re = regexp.MustCompile(`[\\/:*?""<>|]`)
+	pic.Tags = re.ReplaceAllString(pic.Tags, `$1`)
+
+	if strings.Contains(u, "png") {
+		pic.Ext = "png"
+	}
+	pic.Ext = "jpg"
+
+	pic.Name = fmt.Sprintf("Konachan.com - %d %s.%s", pic.Id, pic.Tags, pic.Ext)
 }
 
 func DownloadFile(file *KFile, u string) {
-	file.SlimTags()
-	file.BuildName()
-
-	filePath := AlbumPath + string(os.PathSeparator) + file.Name
-
+	file.BuildName(u)
+	log.Infof("building name %s...", file.Name)
+	idxStr := fmt.Sprintf("%02d", file.Id/10000)
+	dst := path.Join(AlbumPath, idxStr, file.Name)
+	g := grabber.NewDownloadClient()
 	// create client
-	client := grab.NewClient()
-	req, _ := grab.NewRequest(filePath, u)
-
-	//dialer, _ := proxy.SOCKS5("tcp", "127.0.0.1:1080", nil, proxy.Direct)
-	//
-	//client.HTTPClient.Transport = &http.Transport{
-	//	DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
-	//		c, e := dialer.Dial(network, addr)
-	//		return c, e
-	//	},
-	//	TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	//}
-
-	// start download
+	req, _ := grab.NewRequest(dst, u)
 	log.Infof("downloading %v...", req.URL())
-	resp := client.Do(req)
-	if resp.HTTPResponse != nil {
-		log.Infof("HTTPResponse %v", resp.HTTPResponse.Status)
-	}
+	g.BatchDownload([]*grab.Request{req})
 
-	// start UI loop
-	t := time.NewTicker(500 * time.Millisecond)
-	defer t.Stop()
-
-Loop:
-	for {
-		select {
-		case <-t.C:
-			log.Infof("  transferred %v / %v bytes (%.2f%%)",
-				resp.BytesComplete(),
-				resp.Size,
-				100*resp.Progress())
-
-		case <-resp.Done:
-			// download is complete
-			break Loop
-		}
-	}
-
-	// check for errors
-	if err := resp.Err(); err != nil {
-		log.Errorf("download: %s", err)
-		return
-	}
-
-	log.Infof("save to ./%s", resp.Filename)
+	log.Infof("save to ./%s", req.Filename)
 
 	return
 }

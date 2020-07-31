@@ -15,10 +15,15 @@ func GetTfIdf() (map[string]float64, map[string]float64) {
 	}
 	log.Infof("tag count map: %d", len(countMap))
 
-	lastId := FetchLastId()
+	lastId, err := GetLastId()
+	if err != nil {
+		log.Warnf("get lastid err: %s", err)
+		lastId = 30 * 10000
+	}
 	log.Infof("post last id: %d", lastId)
 
-	pts, err := (&Posts{}).FetchAllTags()
+	posts := new(Posts)
+	pts, err := posts.FetchAllTags()
 	if err != nil {
 		log.Fatalf("fetch all tags: %s", err)
 	}

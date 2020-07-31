@@ -79,6 +79,7 @@ func main() {
 	}
 
 	models.SetClient(proxyClient)
+	kfile.Reduce(conf.Download.Path)
 	kfile.Sync(conf.Download.Path)
 
 	router := httprouter.New()

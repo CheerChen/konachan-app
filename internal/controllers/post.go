@@ -18,7 +18,7 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-	post, err := models.FetchId(id)
+	post, err := models.FetchPostByID(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -40,11 +40,11 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	query := GetQuery("tag", ps)
-	posts := models.Work(query, pageSize, page)
+	posts := models.BatchFetchPosts(query, pageSize, page)
 
-	log.Infof("fetch posts: %d", len(posts))
+	log.Infof("fetch posts: %d", len(*posts))
 
-	if len(posts) == 0 {
+	if len(*posts) == 0 {
 		http.Error(w, "no posts", http.StatusNotFound)
 		return
 	}
@@ -57,7 +57,7 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	_ = posts.MarkExist()
 
 	cJson(w, posts, map[string]int{
-		"total": len(posts),
+		"total": len(*posts),
 	})
 	return
 }
@@ -69,7 +69,7 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-	post, err := models.FetchId(id)
+	post, err := models.FetchPostByID(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
@@ -85,8 +85,12 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		}
 	}
 
-
-	kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags, Ext: post.GetFileExt()}, post.FileURL)
+	if post.JpegFileSize != 0 && post.FileSize > int64(post.JpegFileSize*10) {
+		log.Warnf("Downloading from Jpeg URL: %s", post.JpegURL)
+		go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags}, post.JpegURL)
+	} else {
+		go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags}, post.FileURL)
+	}
 
 	cJson(w, "OK", nil)
 	return
