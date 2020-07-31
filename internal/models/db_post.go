@@ -22,13 +22,6 @@ type Post struct {
 
 type Posts []Post
 
-func (p Post) GetFileExt() string {
-	if strings.Contains(p.FileURL, "png") {
-		return ".png"
-	}
-	return ".jpg"
-}
-
 func (p *Post) TableName() string {
 	return "post"
 }
@@ -151,12 +144,12 @@ func (ps *Posts) FetchAllTags() (pts []string, err error) {
 
 // SortTagsByTfIdf
 func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
-	var tags Tags
+	var tags []*Tag
 	for _, tag := range strings.Split(p.Tags, " ") {
 		if _, ok := tfIdf[tag]; !ok {
 			tfIdf[tag] = 0.0
 		}
-		tags = append(tags, Tag{Tag: &konachan.Tag{Name: tag}, TfIdf: tfIdf[tag]})
+		tags = append(tags, &Tag{Tag: &konachan.Tag{Name: tag}, TfIdf: tfIdf[tag]})
 	}
 
 	sort.Slice(tags, func(i, j int) bool {
@@ -169,4 +162,11 @@ func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
 	}
 	p.Tags = strings.Join(parts, " ")
 	return nil
+}
+
+type Tag struct {
+	*konachan.Tag
+
+	TfIdf float64 `json:"tf_idf"`
+	Idf   float64 `json:"idf"`
 }
