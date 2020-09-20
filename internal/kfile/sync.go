@@ -1,7 +1,6 @@
 package kfile
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -10,21 +9,29 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
-var ErrRecordNotFound = errors.New("record not found")
+var WallpaperPath = ""
 
-var AlbumPath = ""
-
-func Reduce(p string) {
-	err := ensureDir("temp")
-	if err != nil {
-		log.Warnf("ensureDir temp err:", err)
-		return
+func CheckPath(wp string) {
+	if err := EnsureDir(wp); err != nil {
+		log.Fatalf("Error reading path, %s", err)
 	}
-	files, err := ioutil.ReadDir(p)
+	if err := EnsureDir(os.TempDir()); err != nil {
+		log.Fatalf("Error reading temp path, %s", err)
+	}
+	WallpaperPath = wp
+	// 按 id 分布到文件夹
+	Reduce()
+	// 检查本地文件和数据库一致
+	Sync()
+}
+
+func Reduce() {
+	files, err := ioutil.ReadDir(WallpaperPath)
 	if err != nil {
 		log.Warnf("ReadDir err:", err)
 		return
@@ -42,24 +49,24 @@ func Reduce(p string) {
 		}
 		idx := id / 10000
 		idxStr := fmt.Sprintf("%02d", idx)
-		err = ensureDir(path.Join(p, idxStr))
+		err = EnsureDir(path.Join(WallpaperPath, idxStr))
 		if err != nil {
-			log.Warnf("ensureDir err:", err)
+			log.Warnf("EnsureDir err:", err)
 			continue
 		}
 		err = os.Rename(
-			path.Join(p, f.Name()),
-			path.Join(p, idxStr, f.Name()),
+			path.Join(WallpaperPath, f.Name()),
+			path.Join(WallpaperPath, idxStr, f.Name()),
 		)
 		if err != nil {
 			log.Warnf("Rename err:", err)
 			continue
 		}
-		log.Infof("Move file: %s", path.Join(p, idxStr, f.Name()))
+		log.Infof("Move file: %s", path.Join(WallpaperPath, idxStr, f.Name()))
 	}
 }
 
-func ensureDir(dirName string) error {
+func EnsureDir(dirName string) error {
 	err := os.Mkdir(dirName, os.ModeDir)
 	if err == nil || os.IsExist(err) {
 		return nil
@@ -68,10 +75,8 @@ func ensureDir(dirName string) error {
 	}
 }
 
-func Sync(path string) {
-	AlbumPath = path
-
-	pics := LoadFiles(path)
+func Sync() {
+	pics := LoadFiles(WallpaperPath)
 	if len(pics) == 0 {
 		log.Warnf("Wallpaper path empty!")
 		return
@@ -120,7 +125,7 @@ func syncPost(ids <-chan int64, c chan<- *models.Post) {
 			log.Infof("find ID(%d) in db", post.ID)
 			continue
 		}
-		post, err = models.FetchPostByID(id)
+		post, err = grabber.GetPostByID(id)
 		if err != nil {
 			log.Warnf("fetch ID(%d) from web: %s", id, err.Error())
 			continue

@@ -1,32 +1,17 @@
 package models
 
 import (
-	"errors"
-	"net/http"
-	"time"
-
-	"github.com/boltdb/bolt"
-
-	"github.com/CheerChen/konachan-app/internal/cache"
 	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/boltdb/bolt"
 )
 
-var db *bolt.DB
-var mem *cache.Cache
-var ErrRecordNotFound = errors.New("record not found")
-var proxyClient *http.Client
+var (
+	db *bolt.DB
+)
 
-func init() {
-	db = getDb()
-	mem = cache.New(1*time.Hour, 2*time.Hour)
-}
-
-func SetClient(c *http.Client) {
-	proxyClient = c
-}
-
-func getDb() *bolt.DB {
-	db, err := bolt.Open("my.db", 0600, &bolt.Options{Timeout: 1 * time.Second})
+func OpenDbfile(f string) {
+	var err error
+	db, err = bolt.Open(f, 0600, nil)
 	if err != nil {
 		log.Fatalf("open DB: %s", err)
 	}
@@ -42,6 +27,4 @@ func getDb() *bolt.DB {
 	if err != nil {
 		log.Fatalf("create bucket: %s", err)
 	}
-
-	return db
 }

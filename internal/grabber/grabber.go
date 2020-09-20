@@ -1,10 +1,11 @@
 package grabber
 
 import (
-	"github.com/CheerChen/konachan-app/internal/log"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/CheerChen/konachan-app/internal/log"
 
 	"github.com/cavaliercoder/grab"
 )

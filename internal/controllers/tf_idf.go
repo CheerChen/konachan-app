@@ -1,29 +1,40 @@
-package models
+package controllers
 
 import (
 	"math"
+	"net/http"
 	"strings"
 
+	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/models"
+
+	"github.com/julienschmidt/httprouter"
 )
 
-func GetTfIdf() (map[string]float64, map[string]float64) {
-	tags := GetRemoteTags()
+func GetTfIdf(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	tfIdf, _ := getTfIdf()
+	cJson(w, tfIdf, nil)
+	return
+}
+
+func getTfIdf() (map[string]float64, map[string]float64) {
+	tags := grabber.GetTags()
 	countMap := make(map[string]int)
 	for _, tag := range tags {
 		countMap[tag.Name] = tag.Count
 	}
 	log.Infof("tag count map: %d", len(countMap))
 
-	lastId, err := GetLastId()
+	lastId, err := grabber.GetPostLastId()
 	if err != nil {
 		log.Warnf("get lastid err: %s", err)
 		lastId = 30 * 10000
 	}
 	log.Infof("post last id: %d", lastId)
 
-	posts := new(Posts)
-	pts, err := posts.FetchAllTags()
+	localPosts := make(models.Posts, 0)
+	pts, err := localPosts.FetchAllTags()
 	if err != nil {
 		log.Fatalf("fetch all tags: %s", err)
 	}

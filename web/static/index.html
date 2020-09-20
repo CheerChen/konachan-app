@@ -50,39 +50,7 @@
             padding: 0 4px;
         }
 
-        /* Responsive layout - makes a two column-layout instead of four columns */
-        @media screen and (max-width: 800px) {
-            .column {
-                flex: 50%;
-                max-width: 50%;
-            }
-        }
-
-        /* Responsive layout - makes the two columns stack on top of each other instead of next to each other */
-        @media screen and (max-width: 600px) {
-            .column {
-                flex: 100%;
-                max-width: 100%;
-            }
-        }
-
         .card {
-            transition: all 0.5s;
-        }
-
-        .card-enter,
-        .card-leave-to {
-            opacity: 0;
-            transform: scale(0);
-        }
-
-        .card-enter-to {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        .card-move {
-            opacity: 1;
             transition: all 0.5s;
         }
 
@@ -143,7 +111,7 @@
             <transition-group tag="div" class="gallery">
                 <figure class="card" v-for="(item, index) in slides" :key="item.id" @click.prevent="goTo(index)">
                     <a :href="item.src" :data-caption="item.tags" :data-width="item.w" :data-height="item.h">
-                        <img :src="item.msrc" :alt="item.tags"
+                        <img v-lazy="item.msrc" :alt="item.tags"
                              :style="{ opacity : mode=='remote' && item.fav ? '0.1': ''}">
                     </a>
                     <figcaption ref="figcaption" style="display:none;">
@@ -233,17 +201,32 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.2/axios.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.11/vue.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue-lazyload/1.3.3/vue-lazyload.js"></script>
 
 <script src="/web/static/vue-loading-overlay@3.js"></script>
 
 <script>
     Vue.use(VueLoading);
+    Vue.use(VueLazyload)
     Vue.component('loading', VueLoading)
 
     var app = new Vue(
         {
             el: '#app',
             data: {
+                options: {
+                    index: 0,
+                    bgOpacity: 0.85,
+                    showHideOpacity: true,
+                    closeOnScroll: true,
+                    shareEl: false,
+                    getThumbBoundsFn: function (index) {
+                        var thumbnail = document.querySelectorAll('.card')[index];
+                        var pageYScroll = window.pageYOffset || document.documentElement.scrollTop;
+                        var rect = thumbnail.getBoundingClientRect();
+                        return {x: rect.left, y: rect.top + pageYScroll, w: rect.width};
+                    }
+                },
                 pageSize: 100,
                 page: 1,
                 query: "",
@@ -276,20 +259,8 @@
                 },
                 goTo: function (index) {
                     let $pswp = document.querySelectorAll('.pswp')[0];
-                    let options = {
-                        index: index,
-                        bgOpacity: 0.85,
-                        showHideOpacity: true,
-                        closeOnScroll: true,
-                        shareEl: false,
-                        getThumbBoundsFn: function (index) {
-                            var thumbnail = document.querySelectorAll('.card')[index];
-                            var pageYScroll = window.pageYOffset || document.documentElement.scrollTop;
-                            var rect = thumbnail.getBoundingClientRect();
-                            return {x: rect.left, y: rect.top + pageYScroll, w: rect.width};
-                        }
-                    };
-                    this.pswp = new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, options);
+                    this.options.index = index;
+                    this.pswp = new PhotoSwipe($pswp, PhotoSwipeUI_Default, this.slides, this.options);
                     this.pswp.init()
                 },
                 updateSlides: function () {
@@ -312,7 +283,8 @@
                                 // item.preview_url = item.preview_url.replace("https", "http")
                                 // item.sample_url = item.sample_url.replace("https", "http")
                                 let slideItem = {
-                                    msrc: this.mode == "remote" ? item.preview_url : `/preview/${item.id}`,
+                                    // msrc: this.mode == "remote" ? item.preview_url : `/preview/${item.id}`,
+                                    msrc: item.preview_url,
                                     src: this.mode == "remote" ? item.sample_url : `/sample/${item.id}`,
                                     w: item.sample_width,
                                     width: item.width,
@@ -337,7 +309,7 @@
                             this.slides.forEach((item, index) => {
                                 item.title = this.$refs.figcaption[index].innerHTML
                             });
-                            let v = this.orderBy
+                            let v = this.orderBy;
                             this.slides.sort((a, b) => (a[v] < b[v]) ? 1 : ((b[v] < a[v]) ? -1 : 0));
                             loader.hide()
                         })

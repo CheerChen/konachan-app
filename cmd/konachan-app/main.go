@@ -1,86 +1,38 @@
 package main
 
 import (
-	"context"
-	"crypto/tls"
-	slog "log"
-	"net"
+	"flag"
 	"net/http"
-	"net/url"
-	"os"
-	"os/exec"
-	"runtime"
 
 	"github.com/CheerChen/konachan-app/internal/asset"
+	"github.com/CheerChen/konachan-app/internal/conf"
 	"github.com/CheerChen/konachan-app/internal/controllers"
+	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 
+	"github.com/NYTimes/gziphandler"
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
-	"github.com/spf13/viper"
-	"golang.org/x/net/proxy"
 )
 
 var (
-	conf     Conf
+	configFile string
 )
 
-type DownloadConf struct {
-	Path string
-}
-
-type ProxyConf struct {
-	Enable bool
-	Socket string
-}
-
-type Conf struct {
-	Download DownloadConf
-	Proxy    ProxyConf
-}
-
 func init() {
-	viper.SetConfigName("config")
-	viper.AddConfigPath(".")
-	if err := viper.ReadInConfig(); err != nil {
-		log.Fatalf("Error reading config file, %s", err)
-	}
-	err := viper.Unmarshal(&conf)
-	if err != nil {
-		log.Fatalf("unable to decode into struct, %v", err)
-	}
+	flag.StringVar(&configFile, "f", "config", "specify configuration file")
+	flag.Parse()
 }
 
 func main() {
-	if err := ensureDir(conf.Download.Path); err != nil {
-		log.Fatal(err)
-	}
+	conf.OpenCfgfile(configFile)
+	models.OpenDbfile(conf.Cfg.Dbfile)
 
-	proxyClient := &http.Client{}
-	if conf.Proxy.Enable {
-		url, err := url.Parse(conf.Proxy.Socket)
-		if err != nil {
-			log.Fatal(err)
-		}
-		dialer, err := proxy.FromURL(url, proxy.Direct)
-		if err != nil {
-			log.Fatal(err)
-		}
-		proxyClient.Transport = &http.Transport{
-			DialContext: func(ctx context.Context, network, addr string) (conn net.Conn, e error) {
-				c, e := dialer.Dial(network, addr)
-				return c, e
-			},
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}
-
-	}
-
-	models.SetClient(proxyClient)
-	kfile.Reduce(conf.Download.Path)
-	kfile.Sync(conf.Download.Path)
+	kfile.CheckPath(conf.Cfg.Download.Path)
+	grabber.SetHost(conf.Cfg.Download.Host)
+	grabber.SetProxy(conf.Cfg.Proxy.Enable, conf.Cfg.Proxy.Socket)
 
 	router := httprouter.New()
 
@@ -88,23 +40,21 @@ func main() {
 	router.GET("/", Index)
 	router.ServeFiles("/web/*filepath", asset.AssetFS())
 
-	//
+	// api
 	router.GET("/remote/:limit/:page/*tag", controllers.Remote)
 	router.GET("/post/:id", controllers.GetByIdV2)
 	router.GET("/tag/tf_idf", controllers.GetTfIdf)
 	router.GET("/download/:id", controllers.Download)
-
 	router.GET("/album/:limit/:page/*tag", controllers.Album)
 	router.GET("/check", controllers.Check)
 	router.GET("/delete/:id", controllers.Delete)
-	router.GET("/preview/:id", controllers.Preview)
 	router.GET("/sample/:id", controllers.Sample)
-	router.GET("/dist/:limit", controllers.Dis)
 
 	handler := cors.Default().Handler(router)
+	withGz := gziphandler.GzipHandler(handler)
 
-	go Open("http://127.0.0.1:7079/")
-	slog.Fatal(http.ListenAndServe(":7079", handler))
+	log.Infof("HTTP listening at: %s", conf.Cfg.Addr)
+	log.Fatalf("%s", http.ListenAndServe(conf.Cfg.Addr, withGz))
 }
 
 func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
@@ -115,30 +65,4 @@ func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 	w.Write(bytes)
-}
-
-func Open(url string) error {
-	var cmd string
-	var args []string
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = "cmd"
-		args = []string{"/c", "start"}
-	case "darwin":
-		cmd = "open"
-	default: // "linux", "freebsd", "openbsd", "netbsd"
-		cmd = "xdg-open"
-	}
-	args = append(args, url)
-	return exec.Command(cmd, args...).Start()
-}
-
-func ensureDir(dirName string) error {
-	err := os.Mkdir(dirName, os.ModeDir)
-	if err == nil || os.IsExist(err) {
-		return nil
-	} else {
-		return err
-	}
 }

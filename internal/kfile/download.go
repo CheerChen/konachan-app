@@ -2,13 +2,14 @@ package kfile
 
 import (
 	"fmt"
-	"github.com/CheerChen/konachan-app/internal/grabber"
-	"github.com/cavaliercoder/grab"
 	"path"
 	"regexp"
 	"strings"
 
+	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
+
+	"github.com/cavaliercoder/grab"
 )
 
 const FileNameLengthLimit = 200
@@ -38,7 +39,7 @@ func DownloadFile(file *KFile, u string) {
 	file.BuildName(u)
 	log.Infof("building name %s...", file.Name)
 	idxStr := fmt.Sprintf("%02d", file.Id/10000)
-	dst := path.Join(AlbumPath, idxStr, file.Name)
+	dst := path.Join(WallpaperPath, idxStr, file.Name)
 	g := grabber.NewDownloadClient()
 	// create client
 	req, _ := grab.NewRequest(dst, u)

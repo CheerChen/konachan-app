@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"sort"
 	"strconv"
 	"strings"
@@ -48,7 +49,7 @@ func (p *Post) Find(id int64) (err error) {
 		key := []byte(strconv.FormatInt(id, 10))
 		value := b.Get(key)
 		if value == nil {
-			return ErrRecordNotFound
+			return errors.New("record not found")
 		}
 		return json.Unmarshal(value, p)
 	})

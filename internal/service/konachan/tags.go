@@ -1,10 +1,11 @@
 package konachan
 
 import (
-	"github.com/dghubble/sling"
-	"github.com/google/go-querystring/query"
 	"net/http"
 	"net/url"
+
+	"github.com/dghubble/sling"
+	"github.com/google/go-querystring/query"
 )
 
 type Tag struct {

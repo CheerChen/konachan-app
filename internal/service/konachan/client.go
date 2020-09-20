@@ -1,8 +1,9 @@
 package konachan
 
 import (
-	"github.com/dghubble/sling"
 	"net/http"
+
+	"github.com/dghubble/sling"
 )
 
 const konachanAPI = "https://konachan.com/"
