@@ -1,104 +1,86 @@
 package log
 
 import (
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"fmt"
 	"os"
-	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
-	errorLogger *zap.SugaredLogger
-	atom zap.AtomicLevel
+	level = DEBUG
 )
 
-func TimeEncoder(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
-	enc.AppendString(t.Format("2006-01-02 15:04:05.000"))
+func init() {
+	var testf = new(log.TextFormatter)
+	testf.ForceColors = true
+	testf.FullTimestamp = true
+	log.SetFormatter(testf)
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.DebugLevel)
 }
 
-func init() {
-	atom = zap.NewAtomicLevel()
-	syncWriter := os.Stdout
+type Event struct {
+	LogLevel LogLevel
+	Payload  string
+}
 
-	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "T",
-		LevelKey:       "L",
-		NameKey:        "N",
-		CallerKey:      "C",
-		MessageKey:     "M",
-		StacktraceKey:  "S",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.CapitalLevelEncoder,
-		EncodeTime:     TimeEncoder,
-		EncodeDuration: zapcore.StringDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+func (e *Event) Type() string {
+	return e.LogLevel.String()
+}
+
+func Infof(format string, v ...interface{}) {
+	event := newLog(INFO, format, v...)
+	print(event)
+}
+
+func Warnf(format string, v ...interface{}) {
+	event := newLog(WARNING, format, v...)
+	print(event)
+}
+
+func Errorf(format string, v ...interface{}) {
+	event := newLog(ERROR, format, v...)
+	print(event)
+}
+
+func Debugf(format string, v ...interface{}) {
+	event := newLog(DEBUG, format, v...)
+	print(event)
+}
+
+func Fatalf(format string, v ...interface{}) {
+	log.Fatalf(format, v...)
+}
+
+func Level() LogLevel {
+	return level
+}
+
+func SetLevel(newLevel LogLevel) {
+	level = newLevel
+}
+
+func print(data *Event) {
+	if data.LogLevel < level {
+		return
 	}
 
-	core := zapcore.NewCore(
-		zapcore.NewConsoleEncoder(encoderConfig),
-		syncWriter,
-		atom,
-	)
-	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
-	errorLogger = logger.Sugar()
+	switch data.LogLevel {
+	case INFO:
+		log.Infoln(data.Payload)
+	case WARNING:
+		log.Warnln(data.Payload)
+	case ERROR:
+		log.Errorln(data.Payload)
+	case DEBUG:
+		log.Debugln(data.Payload)
+	}
 }
 
-func SetLogLevel(level zapcore.Level) {
-	atom.SetLevel(level)
-}
-
-func Debug(args ...interface{}) {
-	errorLogger.Debug(args...)
-}
-
-func Debugf(template string, args ...interface{}) {
-	errorLogger.Debugf(template, args...)
-}
-
-func Info(args ...interface{}) {
-	errorLogger.Info(args...)
-}
-
-func Infof(template string, args ...interface{}) {
-	errorLogger.Infof(template, args...)
-}
-
-func Warn(args ...interface{}) {
-	errorLogger.Warn(args...)
-}
-
-func Warnf(template string, args ...interface{}) {
-	errorLogger.Warnf(template, args...)
-}
-
-func Error(args ...interface{}) {
-	errorLogger.Error(args...)
-}
-
-func Errorf(template string, args ...interface{}) {
-	errorLogger.Errorf(template, args...)
-}
-
-func DPanic(args ...interface{}) {
-	errorLogger.DPanic(args...)
-}
-
-func DPanicf(template string, args ...interface{}) {
-	errorLogger.DPanicf(template, args...)
-}
-
-func Panic(args ...interface{}) {
-	errorLogger.Panic(args...)
-}
-
-func Panicf(template string, args ...interface{}) {
-	errorLogger.Panicf(template, args...)
-}
-
-func Fatal(args ...interface{}) {
-	errorLogger.Fatal(args...)
-}
-
-func Fatalf(template string, args ...interface{}) {
-	errorLogger.Fatalf(template, args...)
+func newLog(logLevel LogLevel, format string, v ...interface{}) *Event {
+	return &Event{
+		LogLevel: logLevel,
+		Payload:  fmt.Sprintf(format, v...),
+	}
 }

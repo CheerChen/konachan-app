@@ -1,6 +1,7 @@
 package kfile
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -64,7 +65,7 @@ func LoadFiles(path string) (pics KFiles) {
 }
 
 func GetFileById(id int64) (pic KFile, err error) {
-	pics := LoadFiles(AlbumPath)
+	pics := LoadFiles(WallpaperPath)
 
 	for _, p := range pics {
 		if p.Id == id {
@@ -72,7 +73,7 @@ func GetFileById(id int64) (pic KFile, err error) {
 		}
 	}
 
-	return pic, ErrRecordNotFound
+	return pic, errors.New("record not found")
 }
 
 func Delete(id int64) (err error) {

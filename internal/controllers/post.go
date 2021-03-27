@@ -8,25 +8,23 @@ import (
 
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/log"
-	"github.com/CheerChen/konachan-app/internal/models"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
 func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-	post, err := models.FetchPostByID(id)
 
+	post, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
-	tfIdf, idf := models.GetTfIdf()
-
+	tfIdf, idf := getTfIdf()
 	post.Mark(tfIdf, idf, map[string]float64{})
 
 	cJson(w, post, nil)
@@ -40,7 +38,7 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	query := GetQuery("tag", ps)
-	posts := models.BatchFetchPosts(query, pageSize, page)
+	posts := konachan.GetPosts(query, pageSize, page)
 
 	log.Infof("fetch posts: %d", len(*posts))
 
@@ -49,7 +47,7 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	tfIdf, idf := models.GetTfIdf()
+	tfIdf, idf := getTfIdf()
 	err = posts.Mark(tfIdf, idf)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -64,13 +62,12 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	id, err := strconv.ParseInt(ps.ByName("id"), 10, 64)
-
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-	post, err := models.FetchPostByID(id)
 
+	post, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
