@@ -1,14 +1,6 @@
-package konachan
+package models
 
-import (
-	"net/http"
-	"net/url"
-
-	"github.com/dghubble/sling"
-	"github.com/google/go-querystring/query"
-)
-
-type Post struct {
+type OriginalPost struct {
 	ID                  int64  `json:"id"`
 	Tags                string `json:"tags"`
 	CreatedAt           int    `json:"created_at"`
@@ -48,44 +40,3 @@ type Post struct {
 	//FlagDetail          interface{}   `json:"flag_detail"`
 }
 
-type PostService struct {
-	sling *sling.Sling
-}
-
-func newPostService(sling *sling.Sling) *PostService {
-	return &PostService{
-		sling: sling,
-	}
-}
-
-type PostListParams struct {
-	Limit int64  `url:"limit,omitempty"`
-	Page  int64  `url:"page,omitempty"`
-	Tags  string `url:"tags,omitempty"`
-}
-
-//
-// https://konachan.com/help/api
-func (s *PostService) List(params *PostListParams) ([]Post, *http.Response, error) {
-	posts := new([]Post)
-	apiError := new(APIError)
-	resp, err := s.sling.New().Get("post.json").QueryStruct(params).Receive(posts, apiError)
-	return *posts, resp, err
-}
-
-func (s *PostService) ListUrlEncode(params *PostListParams) (string, error) {
-	urlValues, err := url.ParseQuery("post.json")
-	if err != nil {
-		return "", err
-	}
-	queryValues, err := query.Values(params)
-	if err != nil {
-		return "", err
-	}
-	for key, values := range queryValues {
-		for _, value := range values {
-			urlValues.Add(key, value)
-		}
-	}
-	return urlValues.Encode(), nil
-}

@@ -6,9 +6,9 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/kfile"
 	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
 func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -18,7 +18,7 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	post, err := grabber.GetPostByID(id)
+	post, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -38,7 +38,7 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	query := GetQuery("tag", ps)
-	posts := grabber.GetPosts(query, pageSize, page)
+	posts := konachan.GetPosts(query, pageSize, page)
 
 	log.Infof("fetch posts: %d", len(*posts))
 
@@ -67,7 +67,7 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	post, err := grabber.GetPostByID(id)
+	post, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

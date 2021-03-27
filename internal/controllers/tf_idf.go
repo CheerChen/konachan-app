@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -19,14 +19,8 @@ func GetTfIdf(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 }
 
 func getTfIdf() (map[string]float64, map[string]float64) {
-	tags := grabber.GetTags()
-	countMap := make(map[string]int)
-	for _, tag := range tags {
-		countMap[tag.Name] = tag.Count
-	}
-	log.Infof("tag count map: %d", len(countMap))
 
-	lastId, err := grabber.GetPostLastId()
+	lastId, err := konachan.GetPostLastId()
 	if err != nil {
 		log.Warnf("get lastid err: %s", err)
 		lastId = 30 * 10000
@@ -63,6 +57,7 @@ func getTfIdf() (map[string]float64, map[string]float64) {
 	tfIdf := make(map[string]float64)
 	idfMap := make(map[string]float64)
 
+	countMap := konachan.GetTags()
 	for tag, tf1 := range tf1 {
 		if _, ok := countMap[tag]; !ok {
 			countMap[tag] = 1

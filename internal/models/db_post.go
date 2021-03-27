@@ -8,13 +8,11 @@ import (
 	"strings"
 
 	"github.com/CheerChen/konachan-app/internal/log"
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
-
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 type Post struct {
-	*konachan.Post
+	OriginalPost
 
 	TfIDf   float64 `json:"tf_idf"`
 	MyScore float64 `json:"my_score"`
@@ -123,51 +121,4 @@ func (ps *Posts) FetchAll(tag string, l, page int) (err error) {
 
 	*ps = (*ps)[start:end]
 	return nil
-}
-
-func (ps *Posts) FetchAllTags() (pts []string, err error) {
-	err = db.View(func(tx *bolt.Tx) error {
-		b := tx.Bucket([]byte(ps.TableName()))
-		_ = b.ForEach(func(_, v []byte) error {
-			var p Post
-			err := json.Unmarshal(v, &p)
-			if err != nil {
-				return err
-			}
-
-			pts = append(pts, p.Tags)
-			return nil
-		})
-		return nil
-	})
-	return
-}
-
-// SortTagsByTfIdf
-func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
-	var tags []*Tag
-	for _, tag := range strings.Split(p.Tags, " ") {
-		if _, ok := tfIdf[tag]; !ok {
-			tfIdf[tag] = 0.0
-		}
-		tags = append(tags, &Tag{Tag: &konachan.Tag{Name: tag}, TfIdf: tfIdf[tag]})
-	}
-
-	sort.Slice(tags, func(i, j int) bool {
-		return tags[i].TfIdf > tags[j].TfIdf
-	})
-
-	var parts []string
-	for _, tag := range tags {
-		parts = append(parts, tag.Name)
-	}
-	p.Tags = strings.Join(parts, " ")
-	return nil
-}
-
-type Tag struct {
-	*konachan.Tag
-
-	TfIdf float64 `json:"tf_idf"`
-	Idf   float64 `json:"idf"`
 }

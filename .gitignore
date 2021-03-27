@@ -6,3 +6,6 @@
 *.db
 *.db.lock
 *.json
+
+konachan-app
+prod.toml

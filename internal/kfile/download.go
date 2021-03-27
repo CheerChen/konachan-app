@@ -2,14 +2,12 @@ package kfile
 
 import (
 	"fmt"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 	"path"
 	"regexp"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
-
-	"github.com/cavaliercoder/grab"
 )
 
 const FileNameLengthLimit = 200
@@ -35,18 +33,21 @@ func (pic *KFile) BuildName(u string) {
 	pic.Name = fmt.Sprintf("Konachan.com - %d %s.%s", pic.Id, pic.Tags, pic.Ext)
 }
 
+// DownloadFile ...
 func DownloadFile(file *KFile, u string) {
 	file.BuildName(u)
 	log.Infof("building name %s...", file.Name)
 	idxStr := fmt.Sprintf("%02d", file.Id/10000)
+	err := EnsureDir(path.Join(WallpaperPath, idxStr))
+	if err != nil {
+		log.Errorf("EnsureDir err:", err)
+		return
+	}
 	dst := path.Join(WallpaperPath, idxStr, file.Name)
-	g := grabber.NewDownloadClient()
-	// create client
-	req, _ := grab.NewRequest(dst, u)
-	log.Infof("downloading %v...", req.URL())
-	g.BatchDownload([]*grab.Request{req})
 
-	log.Infof("save to ./%s", req.Filename)
-
+	err = konachan.ParallelDownload(u, dst)
+	if err != nil {
+		log.Errorf("ParallelDownload err:", err)
+	}
 	return
 }

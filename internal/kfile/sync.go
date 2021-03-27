@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/CheerChen/konachan-app/internal/grabber"
 	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
 var WallpaperPath = ""
@@ -25,9 +25,9 @@ func CheckPath(wp string) {
 	}
 	WallpaperPath = wp
 	// 按 id 分布到文件夹
-	Reduce()
+	//Reduce()
 	// 检查本地文件和数据库一致
-	Sync()
+	//Sync()
 }
 
 func Reduce() {
@@ -125,7 +125,7 @@ func syncPost(ids <-chan int64, c chan<- *models.Post) {
 			log.Infof("find ID(%d) in db", post.ID)
 			continue
 		}
-		post, err = grabber.GetPostByID(id)
+		post, err = konachan.GetPostByID(id)
 		if err != nil {
 			log.Warnf("fetch ID(%d) from web: %s", id, err.Error())
 			continue
