@@ -7,5 +7,5 @@
 *.db.lock
 *.json
 
-konachan-app
+#konachan-app
 prod.toml
