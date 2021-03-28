@@ -1,6 +1,6 @@
-package models
+package konachan
 
-type OriginalPost struct {
+type Post struct {
 	ID                  int64  `json:"id"`
 	Tags                string `json:"tags"`
 	CreatedAt           int    `json:"created_at"`
@@ -39,4 +39,3 @@ type OriginalPost struct {
 	//Frames              []interface{} `json:"frames"`
 	//FlagDetail          interface{}   `json:"flag_detail"`
 }
-

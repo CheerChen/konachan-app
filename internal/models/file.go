@@ -1,16 +1,18 @@
-package kfile
+package models
 
 import (
 	"errors"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
-type KFiles []KFile
 type KFile struct {
 	Id   int64  `json:"id"`
 	Name string `json:"name"`
@@ -20,6 +22,10 @@ type KFile struct {
 
 	Header string `json:"header"`
 }
+
+type KFiles []KFile
+
+const FileNameLengthLimit = 200
 
 func LoadFiles(path string) (pics KFiles) {
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -76,7 +82,7 @@ func GetFileById(id int64) (pic KFile, err error) {
 	return pic, errors.New("record not found")
 }
 
-func Delete(id int64) (err error) {
+func DeleteFile(id int64) (err error) {
 	pic, err := GetFileById(id)
 
 	if err != nil {
@@ -84,4 +90,46 @@ func Delete(id int64) (err error) {
 	}
 	return os.Remove(pic.Name)
 
+}
+
+func (pic *KFile) BuildName(u string) {
+	// reduce tags
+	tags := strings.Split(pic.Tags, " ")
+
+	for len(pic.Tags) >= FileNameLengthLimit {
+		tags = tags[:len(tags)-1]
+		pic.Tags = strings.Join(tags, " ")
+	}
+
+	// replace special char
+	var re = regexp.MustCompile(`[\\/:*?""<>|]`)
+	pic.Tags = re.ReplaceAllString(pic.Tags, `$1`)
+
+	if strings.Contains(u, "png") {
+		pic.Ext = "png"
+	}
+	pic.Ext = "jpg"
+
+	pic.Name = fmt.Sprintf("Konachan.com - %d %s.%s", pic.Id, pic.Tags, pic.Ext)
+}
+
+// DownloadFile ...
+func DownloadFile(file *KFile, u string) {
+	file.BuildName(u)
+	log.Infof("building name %s...", file.Name)
+	idxStr := fmt.Sprintf("%02d", file.Id/10000)
+	err := EnsureDir(path.Join(WallpaperPath, idxStr))
+	if err != nil {
+		log.Errorf("EnsureDir err:", err)
+		return
+	}
+	dst := path.Join(WallpaperPath, idxStr, file.Name)
+
+	log.Infof("downloading %v...", u)
+	log.Infof("save to ./%s", dst)
+	err = konachan.ParallelDownload(u, dst)
+	if err != nil {
+		log.Errorf("ParallelDownload err:", err)
+	}
+	return
 }

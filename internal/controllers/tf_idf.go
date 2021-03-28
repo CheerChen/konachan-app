@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 	"github.com/CheerChen/konachan-app/internal/service/konachan"
 

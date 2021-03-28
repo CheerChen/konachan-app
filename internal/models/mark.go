@@ -3,8 +3,6 @@ package models
 import (
 	"math"
 	"strings"
-
-	"github.com/CheerChen/konachan-app/internal/log"
 )
 
 // Mark

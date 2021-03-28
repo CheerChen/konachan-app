@@ -1,4 +1,8 @@
 # konachan-app
+[![Go Report Card](https://goreportcard.com/badge/github.com/CheerChen/konachan-app)](https://goreportcard.com/report/github.com/CheerChen/konachan-app)
+[![Downloads](https://img.shields.io/github/downloads/CheerChen/konachan-app/total.svg)](https://github.com/CheerChen/konachan-app/releases)
+[![Release](https://img.shields.io/github/release/CheerChen/konachan-app.svg?label=Release)](https://github.com/CheerChen/konachan-app/releases)
+
 
 这是一个可以个性化推荐K站壁纸的`Web Appliaction`。
 

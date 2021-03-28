@@ -1,12 +1,9 @@
-package kfile
+package models
 
 import (
 	"fmt"
 	"image"
 	"os"
-
-	"github.com/CheerChen/konachan-app/internal/log"
-	"github.com/CheerChen/konachan-app/internal/models"
 )
 
 func Check() (diff map[int64]string) {
@@ -18,7 +15,7 @@ func Check() (diff map[int64]string) {
 
 	diff = make(map[int64]string)
 	for _, pic := range pics {
-		var post models.Post
+		var post Post
 		err := post.Find(pic.Id)
 		if err != nil {
 			log.Warnf("Post ID(%d) not in db", pic.Id)

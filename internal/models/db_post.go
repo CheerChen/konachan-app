@@ -7,12 +7,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
+
 	bolt "go.etcd.io/bbolt"
 )
 
 type Post struct {
-	OriginalPost
+	konachan.Post
 
 	TfIDf   float64 `json:"tf_idf"`
 	MyScore float64 `json:"my_score"`
@@ -20,6 +21,16 @@ type Post struct {
 }
 
 type Posts []Post
+
+func (ps *Posts) Make(items []konachan.Post) {
+	for _, p := range items {
+		*ps = append(*ps, Post{Post: p})
+	}
+}
+
+func (p *Post) Make(item *konachan.Post) {
+	*p = Post{Post: *item}
+}
 
 func (p *Post) TableName() string {
 	return "post"

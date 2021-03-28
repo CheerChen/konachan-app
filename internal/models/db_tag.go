@@ -2,21 +2,16 @@ package models
 
 import (
 	"encoding/json"
-	bolt "go.etcd.io/bbolt"
 	"sort"
 	"strings"
+
+	bolt "go.etcd.io/bbolt"
+
+	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
-type OriginalTag struct {
-	ID        int    `json:"id"`
-	Name      string `json:"name"`
-	Count     int    `json:"count"`
-	Type      int    `json:"type"`
-	Ambiguous bool   `json:"ambiguous"`
-}
-
 type Tag struct {
-	OriginalTag
+	konachan.Tag
 
 	TfIdf float64 `json:"tf_idf"`
 	Idf   float64 `json:"idf"`
@@ -47,7 +42,7 @@ func (p *Post) SortTagsByTfIdf(tfIdf map[string]float64) (err error) {
 		if _, ok := tfIdf[tag]; !ok {
 			tfIdf[tag] = 0.0
 		}
-		tags = append(tags, &Tag{OriginalTag: OriginalTag{Name: tag}, TfIdf: tfIdf[tag]})
+		tags = append(tags, &Tag{konachan.Tag{Name: tag}, tfIdf[tag], 0})
 	}
 
 	sort.Slice(tags, func(i, j int) bool {

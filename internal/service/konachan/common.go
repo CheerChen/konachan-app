@@ -1,8 +1,10 @@
 package konachan
 
 import (
-	"github.com/CheerChen/konachan-app/internal/client"
 	"time"
+
+	"github.com/CheerChen/konachan-app/internal/client"
+	"github.com/CheerChen/konachan-app/internal/logger"
 )
 
 const (
@@ -22,14 +24,13 @@ var (
 	hostname string
 	myclient client.Client
 	lastid   int64
-	lru   *LRUCache
+	lru      *LRUCache
+	log      logger.Logger
 )
 
-func SetHost(host string) {
+func Set(c client.Client, host string, l logger.Logger) {
 	hostname = host
-}
-
-func SetClient(c client.Client) {
 	myclient = c
 	lru = New(100)
+	log = l
 }

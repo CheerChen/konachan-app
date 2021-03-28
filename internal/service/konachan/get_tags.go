@@ -2,8 +2,6 @@ package konachan
 
 import (
 	"fmt"
-	"github.com/CheerChen/konachan-app/internal/log"
-	"github.com/CheerChen/konachan-app/internal/models"
 	"time"
 )
 
@@ -16,18 +14,18 @@ func GetTags() map[string]int {
 	if ok {
 		tagCountMap = v.(map[string]int)
 	} else {
-		tags := &[]models.Tag{}
-		log.Infof("NewRequest: %s", u)
-		err := myclient.GetJSON(u, tags)
+		var tags []Tag
+		log.Infof("req: %s", u)
+		err := myclient.GetJSON(u, &tags)
 		if err != nil {
-			log.Errorf("[GetTags] GetJSON err: %s", err)
+			log.Errorf("get json err: %s", err)
 			return tagCountMap
 		}
-		for _, tag := range *tags {
+		for _, tag := range tags {
 			tagCountMap[tag.Name] = tag.Count
 		}
 		lru.Put(timeTag+u, tagCountMap)
-		log.Infof("[GetTags] update tag count map: %d", len(tagCountMap))
+		log.Infof("update tag count map: %d", len(tagCountMap))
 	}
 
 	return tagCountMap

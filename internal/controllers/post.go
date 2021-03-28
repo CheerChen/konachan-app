@@ -6,8 +6,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/models"
 	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
@@ -17,13 +16,13 @@ func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusNotAcceptable)
 		return
 	}
-
-	post, err := konachan.GetPostByID(id)
+	post := new(models.Post)
+	kpost, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
-
+	post.Make(kpost)
 	tfIdf, idf := getTfIdf()
 	post.Mark(tfIdf, idf, map[string]float64{})
 
@@ -38,7 +37,8 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	}
 
 	query := GetQuery("tag", ps)
-	posts := konachan.GetPosts(query, pageSize, page)
+	posts := &models.Posts{}
+	posts.Make(konachan.GetPosts(query, pageSize, page))
 
 	log.Infof("fetch posts: %d", len(*posts))
 
@@ -67,11 +67,13 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	post, err := konachan.GetPostByID(id)
+	post := new(models.Post)
+	kpost, err := konachan.GetPostByID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
+	post.Make(kpost)
 
 	err = post.Find(post.ID)
 	if err != nil {
@@ -84,9 +86,9 @@ func Download(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	if post.JpegFileSize != 0 && post.FileSize > int64(post.JpegFileSize*10) {
 		log.Warnf("Downloading from Jpeg URL: %s", post.JpegURL)
-		go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags}, post.JpegURL)
+		go models.DownloadFile(&models.KFile{Id: post.ID, Tags: post.Tags}, post.JpegURL)
 	} else {
-		go kfile.DownloadFile(&kfile.KFile{Id: post.ID, Tags: post.Tags}, post.FileURL)
+		go models.DownloadFile(&models.KFile{Id: post.ID, Tags: post.Tags}, post.FileURL)
 	}
 
 	cJson(w, "OK", nil)
