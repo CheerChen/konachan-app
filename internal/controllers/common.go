@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/logger"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -48,4 +48,12 @@ func cJson(w http.ResponseWriter, data interface{}, meta interface{}) {
 	if err := json.NewEncoder(w).Encode(response); err != nil {
 		log.Errorf("json encode: %s", err)
 	}
+}
+
+var (
+	log logger.Logger
+)
+
+func Log(l logger.Logger) {
+	log = l
 }

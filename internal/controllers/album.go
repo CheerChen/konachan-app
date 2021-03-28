@@ -7,8 +7,6 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/log"
 	"github.com/CheerChen/konachan-app/internal/models"
 )
 
@@ -51,7 +49,7 @@ func Album(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 // 检查数据一致
 func Check(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	cJson(w, kfile.Check(), nil)
+	cJson(w, models.Check(), nil)
 }
 
 // 从本地删除
@@ -75,7 +73,7 @@ func Delete(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
 	}
-	err = kfile.Delete(id)
+	err = models.DeleteFile(id)
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
@@ -155,7 +153,7 @@ func Sample(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 		return
 	}
 
-	pic, err := kfile.GetFileById(id)
+	pic, err := models.GetFileById(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return

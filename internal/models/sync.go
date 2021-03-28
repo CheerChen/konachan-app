@@ -1,4 +1,4 @@
-package kfile
+package models
 
 import (
 	"fmt"
@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/CheerChen/konachan-app/internal/log"
-	"github.com/CheerChen/konachan-app/internal/models"
 	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
@@ -27,7 +25,7 @@ func CheckPath(wp string) {
 	// 按 id 分布到文件夹
 	//Reduce()
 	// 检查本地文件和数据库一致
-	//Sync()
+	Sync()
 }
 
 func Reduce() {
@@ -90,7 +88,7 @@ func Sync() {
 		}
 	}()
 
-	resultCh := make(chan *models.Post)
+	resultCh := make(chan *Post)
 	var wg sync.WaitGroup
 	const numWorkers = 10
 	wg.Add(numWorkers)
@@ -108,28 +106,29 @@ func Sync() {
 	var downloaded int
 	for r := range resultCh {
 		downloaded++
-		log.Infof("Sync SUCCESS to db ID(%d)", r.ID)
+		log.Infof("sync SUCCESS to db ID(%d)", r.ID)
 	}
 
-	log.Infof("Sync complete")
-	log.Infof("Synced: %d", downloaded)
+	log.Infof("sync complete")
+	log.Infof("synced: %d", downloaded)
 
 	return
 }
 
-func syncPost(ids <-chan int64, c chan<- *models.Post) {
+func syncPost(ids <-chan int64, c chan<- *Post) {
 	for id := range ids {
-		post := new(models.Post)
+		post := new(Post)
 		err := post.Find(id)
 		if err == nil {
 			log.Infof("find ID(%d) in db", post.ID)
 			continue
 		}
-		post, err = konachan.GetPostByID(id)
+		kpost, err := konachan.GetPostByID(id)
 		if err != nil {
 			log.Warnf("fetch ID(%d) from web: %s", id, err.Error())
 			continue
 		}
+		post.Make(kpost)
 		err = post.Save()
 		if err != nil {
 			log.Errorf("save post ID(%d): %s", post.ID, err.Error())

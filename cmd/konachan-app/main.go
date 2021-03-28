@@ -12,39 +12,43 @@ import (
 	"github.com/CheerChen/konachan-app/internal/client"
 	"github.com/CheerChen/konachan-app/internal/conf"
 	"github.com/CheerChen/konachan-app/internal/controllers"
-	"github.com/CheerChen/konachan-app/internal/kfile"
-	"github.com/CheerChen/konachan-app/internal/log"
+	"github.com/CheerChen/konachan-app/internal/logger"
 	"github.com/CheerChen/konachan-app/internal/models"
 	"github.com/CheerChen/konachan-app/internal/service/konachan"
 )
 
 var (
-	configFile string
+	c string
 	//go:embed static/*
-	f embed.FS
+	f   embed.FS
+	log logger.Logger
 )
 
-func init() {
-	flag.StringVar(&configFile, "c", "", "specify configuration file")
+func main() {
+	log = logger.New()
+
+	flag.StringVar(&c, "c", "", "specify configuration file")
 	flag.Parse()
 
-	conf.OpenCfgfile(configFile)
-	models.OpenDbfile(conf.Cfg.Dbfile)
+	conf, err := conf.NewLoader().LoadFile(c)
+	if err != nil {
+		log.Fatalf("Error reading config file, %s", err)
+	}
 
-	kfile.CheckPath(conf.Cfg.Download.Path)
+	controllers.Log(log)
+	models.Log(log)
+	models.OpenDbfile(conf.Dbfile)
+	models.CheckPath(conf.Download.Path)
 
 	myclient := client.New()
-	if conf.Cfg.Proxy.Enable {
-		err := myclient.SetProxyUrl(conf.Cfg.Proxy.Socket)
+	if conf.Proxy.Enable {
+		err := myclient.SetProxyUrl(conf.Proxy.Socket)
 		if err != nil {
 			log.Fatalf("Error load client proxy, %s", err)
 		}
 	}
-	konachan.SetHost(conf.Cfg.Download.Host)
-	konachan.SetClient(myclient)
-}
+	konachan.Set(myclient, conf.Download.Host, log)
 
-func main() {
 	router := httprouter.New()
 
 	// static
@@ -71,6 +75,6 @@ func main() {
 	handler := cors.Default().Handler(router)
 	withGz := gziphandler.GzipHandler(handler)
 
-	log.Infof("HTTP listening at: %s", conf.Cfg.Addr)
-	log.Fatalf("%s", http.ListenAndServe(conf.Cfg.Addr, withGz))
+	log.Infof("HTTP listening at: %s", conf.Addr)
+	log.Fatalf("%s", http.ListenAndServe(conf.Addr, withGz))
 }

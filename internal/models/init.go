@@ -1,13 +1,19 @@
 package models
 
 import (
-	"github.com/CheerChen/konachan-app/internal/log"
 	bolt "go.etcd.io/bbolt"
+
+	"github.com/CheerChen/konachan-app/internal/logger"
 )
 
 var (
-	db *bolt.DB
+	db  *bolt.DB
+	log logger.Logger
 )
+
+func Log(l logger.Logger) {
+	log = l
+}
 
 func OpenDbfile(f string) {
 	var err error
