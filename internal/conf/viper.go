@@ -12,8 +12,8 @@ type ViperLoader struct {
 // LoadFile ...
 func (v *ViperLoader) LoadFile(filename string) (*Config, error) {
 	c := &Config{}
-	viper.SetConfigName(filename)
-	viper.AddConfigPath(".")
+	viper.SetConfigFile(filename)
+	// viper.AddConfigPath(".")
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, err
 	}
