@@ -12,6 +12,6 @@ FROM alpine:latest
 LABEL org.opencontainers.image.source="https://github.com/CheerChen/konachan-app"
 
 COPY --from=builder /kanachan-app /
-COPY --from=builder /kanachan-src/config.toml.sample /config.toml
+COPY --from=builder /kanachan-src/config/config.toml.sample /config.toml
 
 ENTRYPOINT ["/kanachan-app","-c","config.toml"]
