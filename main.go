@@ -51,9 +51,9 @@ func main() {
 
 	router := httprouter.New()
 
-	// static
+	// assets
 	router.GET("/", func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-		bytes, err := f.ReadFile("static/index.html")
+		bytes, err := f.ReadFile("assets/index.html")
 		if err != nil {
 			http.NotFound(w, r)
 			return
