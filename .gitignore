@@ -1,5 +1,6 @@
 # IDE integration
-.idea/*
+.idea
+bin
 
 # Binaries for programs and plugins
 *.exe
@@ -8,4 +9,4 @@
 *.json
 
 #konachan-app
-prod.toml
+config.toml

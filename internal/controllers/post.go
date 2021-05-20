@@ -42,17 +42,14 @@ func Remote(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 
 	log.Infof("fetch posts: %d", len(*posts))
 
-	if len(*posts) == 0 {
-		http.Error(w, "no posts", http.StatusNotFound)
-		return
+	if len(*posts) != 0 {
+		tfIdf, idf := getTfIdf()
+		err = posts.Mark(tfIdf, idf)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+		}
+		_ = posts.MarkExist()
 	}
-
-	tfIdf, idf := getTfIdf()
-	err = posts.Mark(tfIdf, idf)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-	}
-	_ = posts.MarkExist()
 
 	cJson(w, posts, map[string]int{
 		"total": len(*posts),

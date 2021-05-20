@@ -19,7 +19,7 @@ import (
 
 var (
 	c string
-	//go:embed static/*
+	//go:embed assets/*
 	f   embed.FS
 	log logger.Logger
 )
@@ -38,7 +38,7 @@ func main() {
 	controllers.Log(log)
 	models.Log(log)
 	models.OpenDbfile(conf.Dbfile)
-	models.CheckPath(conf.Download.Path)
+	models.CheckPath("Wallpaper")
 
 	myclient := client.New()
 	if conf.Proxy.Enable {
