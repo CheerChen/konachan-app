@@ -3,6 +3,7 @@ package konachan
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 )
 
@@ -13,7 +14,7 @@ func GetPosts(query string, pageSize, page int) (merge []Post) {
 	for page < endPage {
 		var posts []Post
 
-		u := fmt.Sprintf(postUrlFmt, hostname, postLimit, page, query)
+		u := fmt.Sprintf(postUrlFmt, hostname, postLimit, page, url.QueryEscape(query))
 
 		v, ok := lru.Get(timeTag + u)
 		if ok {
@@ -23,7 +24,7 @@ func GetPosts(query string, pageSize, page int) (merge []Post) {
 			err := myclient.GetJSON(u, &posts)
 			if err != nil {
 				log.Errorf("get json err:", err)
-				continue
+				break
 			}
 			lru.Put(timeTag+u, posts)
 		}

@@ -1,0 +1,13 @@
+# config
+addr = ":7079"
+dbfile = "my.db"
+
+[download]
+##  - konachan.net
+##  - konachan.com
+host = "https://konachan.com"
+
+[proxy]
+enable = false
+## proxy [socks5://][127.0.0.1:]<1-65535>
+socket = "socks5://192.168.0.110:7891"
