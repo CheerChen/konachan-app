@@ -1,3 +1,7 @@
+FROM docker.io/project31/aarch64-alpine-qemu:3.5-7
+
+RUN [ "cross-build-start" ]
+
 FROM arm64v8/golang:alpine as builder
 
 RUN apk add --no-cache make git
@@ -16,3 +20,5 @@ COPY --from=builder /kanachan-app /
 COPY --from=builder /config.toml /
 
 ENTRYPOINT ["/kanachan-app","-c","config.toml"]
+
+RUN [ "cross-build-end" ]
