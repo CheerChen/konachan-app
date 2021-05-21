@@ -1,7 +1,7 @@
 package konachan
 
 import (
-	"github.com/CheerChen/konachan-app/internal/client"
+	"github.com/CheerChen/konakore/internal/client"
 )
 
 func ParallelDownload(u, filename string) error {

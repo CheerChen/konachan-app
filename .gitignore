@@ -8,5 +8,5 @@ bin
 *.db.lock
 *.json
 
-#konachan-app
+# config
 config.toml

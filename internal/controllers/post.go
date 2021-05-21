@@ -6,8 +6,8 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/models"
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
+	"github.com/CheerChen/konakore/internal/models"
+	"github.com/CheerChen/konakore/internal/service/konachan"
 )
 
 func GetByIdV2(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {

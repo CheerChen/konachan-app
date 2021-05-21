@@ -7,7 +7,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 
-	"github.com/CheerChen/konachan-app/internal/models"
+	"github.com/CheerChen/konakore/internal/models"
 )
 
 // 本地相册

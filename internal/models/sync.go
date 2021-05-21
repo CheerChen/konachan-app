@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
+	"github.com/CheerChen/konakore/internal/service/konachan"
 )
 
 var WallpaperPath = ""
