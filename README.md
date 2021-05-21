@@ -1,8 +1,6 @@
 # Konakore
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/CheerChen/konakore)](https://goreportcard.com/report/github.com/CheerChen/konakore)
-[![Downloads](https://img.shields.io/github/downloads/CheerChen/konakore/total.svg)](https://github.com/CheerChen/konakore/releases)
-[![Release](https://img.shields.io/github/release/CheerChen/konakore.svg?label=Release)](https://github.com/CheerChen/konakore/releases)
 
 Manage your Anime wallpaper collection with Kona-kore.
 
