@@ -1,6 +1,6 @@
 # config
 addr = ":7079"
-dbfile = "my.db"
+dbfile = "/config/my.db"
 
 [download]
 ##  - konachan.net
