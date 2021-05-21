@@ -3,8 +3,8 @@ package konachan
 import (
 	"time"
 
-	"github.com/CheerChen/konachan-app/internal/client"
-	"github.com/CheerChen/konachan-app/internal/logger"
+	"github.com/CheerChen/konakore/internal/client"
+	"github.com/CheerChen/konakore/internal/logger"
 )
 
 const (

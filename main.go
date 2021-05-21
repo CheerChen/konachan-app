@@ -9,12 +9,12 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/rs/cors"
 
-	"github.com/CheerChen/konachan-app/internal/client"
-	"github.com/CheerChen/konachan-app/internal/conf"
-	"github.com/CheerChen/konachan-app/internal/controllers"
-	"github.com/CheerChen/konachan-app/internal/logger"
-	"github.com/CheerChen/konachan-app/internal/models"
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
+	"github.com/CheerChen/konakore/internal/client"
+	"github.com/CheerChen/konakore/internal/conf"
+	"github.com/CheerChen/konakore/internal/controllers"
+	"github.com/CheerChen/konakore/internal/logger"
+	"github.com/CheerChen/konakore/internal/models"
+	"github.com/CheerChen/konakore/internal/service/konachan"
 )
 
 var (

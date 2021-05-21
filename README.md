@@ -1,38 +1,26 @@
-# konachan-app
-[![Go Report Card](https://goreportcard.com/badge/github.com/CheerChen/konachan-app)](https://goreportcard.com/report/github.com/CheerChen/konachan-app)
-[![Downloads](https://img.shields.io/github/downloads/CheerChen/konachan-app/total.svg)](https://github.com/CheerChen/konachan-app/releases)
-[![Release](https://img.shields.io/github/release/CheerChen/konachan-app.svg?label=Release)](https://github.com/CheerChen/konachan-app/releases)
+# Konakore
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/CheerChen/konakore)](https://goreportcard.com/report/github.com/CheerChen/konakore)
+[![Downloads](https://img.shields.io/github/downloads/CheerChen/konakore/total.svg)](https://github.com/CheerChen/konakore/releases)
+[![Release](https://img.shields.io/github/release/CheerChen/konakore.svg?label=Release)](https://github.com/CheerChen/konakore/releases)
 
-这是一个可以个性化推荐K站壁纸的`Web Appliaction`。
+Manage your Anime wallpaper collection with Kona-kore.
 
-通过扫描指定目录里的壁纸在K站的标签，抓取的新壁纸的排序会根据标签组的相关度改变，综合评分和相关度进行排序。
+## Features
 
-## 初始化路径 
+- Scan local wallpaper files into album
+- New post will be sorted in order of relevance to tags in album
+- Easy download new wallpaper and manage them
 
-在`config.toml`中配置下载目录，默认为程序同级目录`Wallpapers`。
+## Quick Start
 
-注意目录中壁纸的文件名必须包含`id`，否则不会被记录。
+We recommend deploying Kona-kore with Docker Compose.
 
-```
-# example
-Konachan.com - 286575 banishment original scenic seifuku signed twintails.jpg
-or
-286575.jpg
-```
+See `Dockerfile` to find more details.
 
+wallpaper files in path should contain valid *id* in filename, otherwise it would not be scaned.
 
-## English Version
-This is an anime wallpaper download helper for website Konachan.com.
-
-After scanning wallpaper files in path defined. New post will be ranked forward if its tags is more relevant to which you already have.
-
-### Getting Started
-Config your wallpaper path in `config.toml`, the default path is `Wallpapers`.
-
-Picture files in path should contain valid *id* in filename, otherwise it would not be scaned.
-
-```
+```shell
 # example
 Konachan.com - 286575 banishment original scenic seifuku signed twintails.jpg
 or
@@ -41,11 +29,10 @@ or
 
 ## License
 
-MIT
+Kona-kore is released under the MIT license.
 
-## More
+## Contributing
 
-* Ranking based on *tf-idf* algorithm
-* Using [Danbooru API (version 1.13.0)](https://konachan.com/help/api)
-* Please feel free to contact me if you have issues & improvements & new ideas.
-
+- Ranking based on *tf-idf* algorithm
+- Using [Danbooru API (version 1.13.0)](https://konachan.com/help/api)
+- Please feel free to contact me if you have any ideas

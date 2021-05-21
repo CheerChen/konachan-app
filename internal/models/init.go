@@ -3,7 +3,7 @@ package models
 import (
 	bolt "go.etcd.io/bbolt"
 
-	"github.com/CheerChen/konachan-app/internal/logger"
+	"github.com/CheerChen/konakore/internal/logger"
 )
 
 var (

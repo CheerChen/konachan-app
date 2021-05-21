@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
+	"github.com/CheerChen/konakore/internal/service/konachan"
 
 	bolt "go.etcd.io/bbolt"
 )

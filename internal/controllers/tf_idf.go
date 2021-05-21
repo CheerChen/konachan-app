@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/CheerChen/konachan-app/internal/models"
-	"github.com/CheerChen/konachan-app/internal/service/konachan"
+	"github.com/CheerChen/konakore/internal/models"
+	"github.com/CheerChen/konakore/internal/service/konachan"
 
 	"github.com/julienschmidt/httprouter"
 )

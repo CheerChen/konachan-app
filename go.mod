@@ -1,4 +1,4 @@
-module github.com/CheerChen/konachan-app
+module github.com/CheerChen/konakore
 
 go 1.16
 

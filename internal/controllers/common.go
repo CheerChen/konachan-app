@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/CheerChen/konachan-app/internal/logger"
+	"github.com/CheerChen/konakore/internal/logger"
 
 	"github.com/julienschmidt/httprouter"
 )

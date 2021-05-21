@@ -10,7 +10,6 @@ type Proxy struct {
 	Socket string
 }
 
-// Config of konachan app
 type Config struct {
 	Addr     string
 	Dbfile   string
